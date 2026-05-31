@@ -491,12 +491,14 @@ function showQRCode() {
       ctx.fillText(line, 100, 30 + i * 14);
     });
 
-    // 同时显示可复制的URL
+    // 生成真正的二维码图片 + 可复制链接
+    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
     container.innerHTML = `
       <div style="text-align:center;padding:20px;background:#fff;border-radius:12px">
-        <div style="font-family:monospace;font-size:0.75em;color:#999;word-break:break-all;margin-bottom:12px">${url}</div>
-        <div style="font-weight:600;color:#d48080">↑ 复制此链接到微信发送给顾客 ↑</div>
-        <p style="font-size:0.8em;color:#999;margin-top:8px">顾客点击链接即可扫码查看倒计时<br>也可打印成二维码立牌放在吧台</p>
+        <img src="${qrSrc}" width="200" height="200" alt="顾客链接二维码" style="display:block;margin:0 auto 12px;border-radius:8px" onerror="this.onerror=null;this.nextSibling.style.display='block';this.style.display='none'" />
+        <div style="display:none;font-family:monospace;font-size:0.75em;color:#999;word-break:break-all;margin-bottom:12px">${url}</div>
+        <div style="font-weight:600;color:#d48080;margin-bottom:4px">📱 顾客微信扫码即可查看倒计时</div>
+        <p style="font-size:0.8em;color:#999;margin-top:8px">也可打印二维码立牌放在吧台<br>顾客扫码后输入4位取餐码查看剩余时间</p>
       </div>
     `;
   }, 100);
