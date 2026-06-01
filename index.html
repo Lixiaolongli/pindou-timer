@@ -460,7 +460,7 @@ function showTimer(order) {
         clearInterval(state.timerInterval);
         backToCode();
       }
-    }, 5000);
+    }, 1000);
   } else {
     updateTimerDisplay(order);
     // 限时订单：每秒刷新倒计时
@@ -476,7 +476,7 @@ function showTimer(order) {
         return;
       }
       updateTimerDisplay(o);
-    }, 5000);
+    }, 1000);
   }
 }
 
@@ -590,7 +590,7 @@ setInterval(() => {
   if (document.getElementById('page-admin').classList.contains('active')) {
     renderOrders();
   }
-}, 5000);
+}, 1000);
 
 // ==================== 导出 ====================
 async function exportCSV() {
