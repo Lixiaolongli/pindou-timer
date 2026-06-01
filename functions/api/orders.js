@@ -29,9 +29,18 @@ export async function onRequest(context) {
   if (path === '/api/orders' && request.method === 'POST') {
     try {
       const body = await request.json();
-      const activeCodes = new Set(orders.filter(o => o.status === 'active').map(o => o.code));
-      let code;
-      do { code = String(Math.floor(1000 + Math.random() * 9000)); } while (activeCodes.has(code));
+      // 优先使用自定义订单号，否则随机生成
+      let code = body.code;
+      if (code && /^\d{4}$/.test(code)) {
+        // 检查是否已存在活跃订单
+        const existing = orders.find(o => o.code === code && o.status === 'active');
+        if (existing) {
+          return new Response(JSON.stringify({ error: '该手机号已有进行中的订单' }), { status: 409, headers: { ...CORS, 'Content-Type': 'application/json' } });
+        }
+      } else {
+        const activeCodes = new Set(orders.filter(o => o.status === 'active').map(o => o.code));
+        do { code = String(Math.floor(1000 + Math.random() * 9000)); } while (activeCodes.has(code));
+      }
 
       const order = {
         code,

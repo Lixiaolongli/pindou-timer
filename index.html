@@ -41,7 +41,7 @@ input:focus, select:focus { border-color: #d48080; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 .timer-label { font-size: 0.9em; color: #999; margin-top: 8px; }
 
-/* 订单号 */
+/* 手机尾号 */
 .code-badge { display: inline-block; background: #d48080; color: #fff; padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 1.2em; letter-spacing: 4px; margin: 8px 0; }
 
 /* 订单列表 */
@@ -86,15 +86,15 @@ input:focus, select:focus { border-color: #d48080; }
 
 <div class="toast" id="toast"></div>
 
-<!-- ====== 顾客端：输入订单号看倒计时 ====== -->
+<!-- ====== 顾客端：输入手机尾号看倒计时 ====== -->
 <div class="page" id="page-customer">
   <div class="header">
     <h1>🧩 拼豆计时</h1>
     <div class="sub" id="shop-name">润达拼豆手工坊</div>
   </div>
   <div class="card" id="card-code">
-    <div class="card-title">请输入你的订单号</div>
-    <input type="text" id="input-code" placeholder="4位数字" maxlength="4" inputmode="numeric" pattern="[0-9]*" autofocus>
+    <div class="card-title">请输入你的手机后4位</div>
+    <input type="text" id="input-code" placeholder="手机后4位" maxlength="4" inputmode="numeric" pattern="[0-9]*" autofocus>
     <button class="btn btn-primary" onclick="lookupOrder()">查看计时</button>
   </div>
   <div class="card" id="card-timer" style="display:none">
@@ -160,6 +160,9 @@ input:focus, select:focus { border-color: #d48080; }
     <h3 style="margin-bottom:16px">新订单</h3>
     <div class="package-grid" id="package-grid"></div>
     <label>或自定义</label>
+    <label>手机后四位</label>
+    <input type="text" id="order-code" placeholder="输入客户手机后4位" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:6px;text-align:center;font-size:1.2em">
+    <label>人数类型</label>
     <select id="order-type">
       <option value="single">单人</option>
       <option value="double">双人</option>
@@ -181,7 +184,7 @@ input:focus, select:focus { border-color: #d48080; }
     <h3 style="margin-bottom:8px;text-align:center">顾客扫码看计时</h3>
     <div class="qr-wrap" id="qr-container"></div>
     <p style="text-align:center;color:#999;font-size:0.8em;margin-top:8px">
-      将二维码打印放在吧台<br>顾客扫码后输入4位订单号即可查看倒计时
+      将二维码打印放在吧台<br>顾客扫码后输入手机后4位即可查看倒计时
     </p>
     <button class="btn btn-outline" onclick="closeDialog('dialog-qr')">关闭</button>
   </div>
@@ -276,8 +279,10 @@ function quickOrder(minutes, price, type, name) {
   document.getElementById('order-minutes').value = minutes || 60;
   document.getElementById('order-price').value = price;
   document.getElementById('order-type').value = type;
-  // 直接下单
-  doCreateOrder(minutes, price, type);
+  document.getElementById('order-code').value = '';
+  document.getElementById('order-code').focus();
+  // 弹出对话框让店员输入手机号后下单
+  document.getElementById('dialog-order').classList.add('show');
 }
 
 function showNewOrder() {
@@ -285,26 +290,31 @@ function showNewOrder() {
 }
 
 function createOrder() {
+  const customCode = document.getElementById('order-code').value.trim();
+  if (!customCode || customCode.length !== 4 || !/^\d{4}$/.test(customCode)) {
+    toast('请输入客户手机后4位数字');
+    return;
+  }
   const minutes = parseInt(document.getElementById('order-minutes').value) || 60;
   const price = parseFloat(document.getElementById('order-price').value) || 0;
   const type = document.getElementById('order-type').value;
-  doCreateOrder(minutes, price, type);
+  doCreateOrder(minutes, price, type, customCode);
   closeDialog('dialog-order');
 }
 
-async function doCreateOrder(minutes, price, type) {
-  const order = await createOrderAPI({ minutes, price, type });
+async function doCreateOrder(minutes, price, type, customCode) {
+  const order = await createOrderAPI({ minutes, price, type, code: customCode });
   if (!order) {
     toast('创建失败，请稍后重试');
     return;
   }
   await loadOrders();
   renderOrders();
-  toast(`✅ 下单成功 订单号：${order.code}`);
+  toast(`✅ 下单成功 手机尾号：${order.code}`);
 
-  // 语音播报订单号
+  // 语音播报手机尾号
   try {
-    const u = new SpeechSynthesisUtterance(`订单号 ${order.code.split('').join(' ')}`);
+    const u = new SpeechSynthesisUtterance(`手机尾号 ${order.code.split('').join(' ')}`);
     u.lang = 'zh-CN';
     u.rate = 0.7;
     u.pitch = 1.1;
@@ -320,7 +330,7 @@ async function doCreateOrder(minutes, price, type) {
 }
 
 async function completeOrder(code) {
-  if (!confirm(`确定要完成订单号 ${code} 吗？`)) return;
+  if (!confirm(`确定要完成手机尾号 ${code} 吗？`)) return;
   // 先本地刷新 UI（乐观更新）
   const order = state.orders.find(o => o.code === code);
   if (order) order.status = 'completed';
@@ -359,12 +369,12 @@ async function clearRecords() {
 }
 
 async function deleteOrder(code) {
-  if (!confirm(`确定要删除订单号 ${code} 吗？\n删除后不可恢复。`)) return;
-  if (!confirm(`再次确认：删除订单号 ${code}？`)) return;
+  if (!confirm(`确定要删除手机尾号 ${code} 吗？\n删除后不可恢复。`)) return;
+  if (!confirm(`再次确认：删除手机尾号 ${code}？`)) return;
   // 先本地刷新 UI（乐观更新）
   state.orders = state.orders.filter(o => o.code !== code);
   renderOrders();
-  toast(`已删除订单号：${code}`);
+  toast(`已删除手机尾号：${code}`);
   // 异步提交 API
   await removeOrderAPI(code);
 }
@@ -388,7 +398,7 @@ async function renderOrders() {
       return `
         <div class="order-item">
           <div class="order-left">
-            <div class="order-code">订单号：${o.code}</div>
+            <div class="order-code">手机尾号：${o.code}</div>
             <div class="order-name">${o.type === 'double' ? '👥 双人' : '👤 单人'} · ¥${o.price}</div>
             <div class="order-time">${remainStr} · ${o.minutes > 0 ? o.minutes+'分钟' : '不限时'}</div>
           </div>
@@ -409,7 +419,7 @@ async function renderOrders() {
     doneEl.innerHTML = done.slice(0, 20).map(o => `
       <div class="order-item">
         <div class="order-left">
-          <div class="order-code">订单号：${o.code}</div>
+          <div class="order-code">手机尾号：${o.code}</div>
           <div class="order-name">${o.type === 'double' ? '👥 双人' : '👤 单人'} · ¥${o.price}</div>
           <div class="order-time">${o.minutes > 0 ? o.minutes+'分钟' : '不限时'}</div>
         </div>
@@ -441,7 +451,7 @@ function initCustomer() {
 async function lookupOrder() {
   const code = document.getElementById('input-code').value.trim();
   if (code.length < 4) {
-    toast('请输入4位订单号');
+    toast('请输入手机后4位');
     return;
   }
   await loadOrders();
@@ -573,7 +583,7 @@ function showQRCode() {
         <img src="${qrSrc}" width="200" height="200" alt="顾客链接二维码" style="display:block;margin:0 auto 12px;border-radius:8px" onerror="this.onerror=null;this.nextSibling.style.display='block';this.style.display='none'" />
         <div style="display:none;font-family:monospace;font-size:0.75em;color:#999;word-break:break-all;margin-bottom:12px">${url}</div>
         <div style="font-weight:600;color:#d48080;margin-bottom:4px">📱 顾客微信扫码即可查看倒计时</div>
-        <p style="font-size:0.8em;color:#999;margin-top:8px">也可打印二维码立牌放在吧台<br>顾客扫码后输入4位订单号查看剩余时间</p>
+        <p style="font-size:0.8em;color:#999;margin-top:8px">也可打印二维码立牌放在吧台<br>顾客扫码后输入手机后4位查看剩余时间</p>
       </div>
     `;
   }, 100);
