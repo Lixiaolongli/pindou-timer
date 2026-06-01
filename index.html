@@ -438,6 +438,7 @@ function showTimer(order) {
       clearInterval(state.timerInterval);
       document.getElementById('timer-number').textContent = '--:--';
       document.getElementById('timer-label').textContent = '订单已结束';
+      backToCode();
       return;
     }
     updateTimerDisplay(o);
