@@ -114,6 +114,19 @@ input:focus, select:focus { border-color: #d48080; }
   </div>
 </div>
 
+<!-- ====== 管理员登录 ====== -->
+<div class="page" id="page-login">
+  <div class="header">
+    <h1>🧩 拼豆 · 管理后台</h1>
+    <div class="sub">请输入管理密码</div>
+  </div>
+  <div class="card">
+    <input type="password" id="input-password" placeholder="管理密码" autofocus>
+    <button class="btn btn-primary" onclick="login()">进入后台</button>
+    <div style="text-align:center;color:#999;font-size:0.8em;margin-top:12px">顾客请使用扫码链接</div>
+  </div>
+</div>
+
 <!-- ====== 管理员端：下单+订单管理 ====== -->
 <div class="page" id="page-admin">
   <div class="header">
@@ -125,6 +138,7 @@ input:focus, select:focus { border-color: #d48080; }
     <button class="btn btn-primary" onclick="showNewOrder()">+ 新订单</button>
     <button class="btn btn-outline" id="btn-qr" onclick="showQRCode()">📱 顾客扫码</button>
     <button class="btn btn-outline" onclick="exportCSV()">📥 导出</button>
+    <button class="btn btn-outline" onclick="logout()" style="color:#999">🔒 退出</button>
   </div>
 
   <!-- 进行中的订单 -->
@@ -566,22 +580,46 @@ function showQRCode() {
 }
 
 // ==================== 路由 ====================
+// ==================== 登录 ====================
+const ADMIN_PASSWORD = '8888';
+
+function login() {
+  const pw = document.getElementById('input-password').value.trim();
+  if (pw === ADMIN_PASSWORD) {
+    sessionStorage.setItem('admin_logged_in', '1');
+    route();
+  } else {
+    toast('密码错误');
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('admin_logged_in');
+  route();
+}
+
 function route() {
   const params = new URLSearchParams(window.location.search);
   const mode = params.get('mode');
   const code = params.get('code');
 
+  // 隐藏所有页面
+  ['page-customer','page-admin','page-login'].forEach(id => {
+    document.getElementById(id).classList.remove('active');
+  });
+
   if (mode === 'customer' || code) {
     // 顾客模式
     document.getElementById('page-customer').classList.add('active');
-    document.getElementById('page-admin').classList.remove('active');
     document.getElementById('shop-name').textContent = '润达拼豆手工坊';
     initCustomer();
-  } else {
-    // 管理员模式（默认）
+  } else if (sessionStorage.getItem('admin_logged_in') === '1') {
+    // 管理员已登录
     document.getElementById('page-admin').classList.add('active');
-    document.getElementById('page-customer').classList.remove('active');
     initAdmin();
+  } else {
+    // 未登录 → 显示密码页
+    document.getElementById('page-login').classList.add('active');
   }
 }
 
