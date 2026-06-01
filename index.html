@@ -303,6 +303,7 @@ async function doCreateOrder(minutes, price, type) {
 }
 
 async function completeOrder(code) {
+  if (!confirm(`确定要完成订单号 ${code} 吗？`)) return;
   // 先本地刷新 UI（乐观更新）
   const order = state.orders.find(o => o.code === code);
   if (order) order.status = 'completed';
