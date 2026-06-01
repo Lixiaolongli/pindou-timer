@@ -1,0 +1,6 @@
+# Cloudflare Pages KV 绑定配置
+# Pages 构建时自动读取这个文件
+
+[[kv_namespaces]]
+binding = "PINDOU_KV"
+id = "62b676c24e9435f3911bab3dee371847"
