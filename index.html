@@ -190,6 +190,24 @@ input:focus, select:focus { border-color: #d48080; }
   </div>
 </div>
 
+<!-- ====== 续时对话框 ====== -->
+<div class="dialog-overlay" id="dialog-extend">
+  <div class="dialog">
+    <h3 style="margin-bottom:16px">⏱ 续时</h3>
+    <p style="color:#999;font-size:0.85em;margin-bottom:16px" id="extend-info">订单：</p>
+    <label>续时套餐</label>
+    <div class="package-grid" id="extend-package-grid"></div>
+    <label>或自定义时长（分钟）</label>
+    <input type="number" id="extend-minutes" value="30" min="5" max="480" step="5">
+    <label>追加价格（元）</label>
+    <input type="number" id="extend-price" value="10" min="0" step="0.1">
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeDialog('dialog-extend')" style="flex:1">取消</button>
+      <button class="btn btn-primary" onclick="doExtend()" style="flex:1">确认续时</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==================== 数据层 ====================
 const API_BASE = '/api';
@@ -368,6 +386,88 @@ async function clearRecords() {
   toast('已清除完成记录');
 }
 
+async function extendOrderAPI(code, minutes, price) {
+  try {
+    const res = await fetch(`${API_BASE}/orders/extend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, minutes, price }),
+    });
+    return res.ok ? await res.json() : null;
+  } catch { return null; }
+}
+
+// ==================== 续时 ====================
+let extendCode = null;
+
+function showExtend(code) {
+  extendCode = code;
+  const order = state.orders.find(o => o.code === code);
+  if (!order) return;
+  document.getElementById('extend-info').textContent = `当前：手机尾号 ${code} · ${order.minutes}分钟 · ¥${order.price}`;
+  // 填充续时套餐
+  const grid = document.getElementById('extend-package-grid');
+  grid.innerHTML = [
+    { name: '加30分钟', minutes: 30, price: 10 },
+    { name: '加1小时', minutes: 60, price: 15 },
+    { name: '升不限时', minutes: -1, price: 0 },
+  ].map(p => {
+    const label = p.minutes === -1 ? '升不限时' : `加${p.minutes}分钟`;
+    return `<div class="package-btn" onclick="pickExtend(${p.minutes},${p.price},'${label}')">
+      <div class="pkg-name">${label}</div>
+      <div class="pkg-price">${p.minutes === -1 ? `补差价 ¥${Math.max(0, 39.9 - order.price).toFixed(1)}` : '¥'+p.price}</div>
+    </div>`;
+  }).join('');
+  // 重置自定义输入
+  document.getElementById('extend-minutes').value = 30;
+  document.getElementById('extend-price').value = 10;
+  document.getElementById('dialog-extend').classList.add('show');
+}
+
+function pickExtend(minutes, price) {
+  if (minutes === -1) {
+    // 升不限时
+    const order = state.orders.find(o => o.code === extendCode);
+    const diff = Math.max(0, 39.9 - (order ? order.price : 0));
+    document.getElementById('extend-minutes').value = 0;
+    document.getElementById('extend-price').value = diff.toFixed(1);
+  } else {
+    document.getElementById('extend-minutes').value = minutes;
+    document.getElementById('extend-price').value = price;
+  }
+}
+
+async function doExtend() {
+  if (!extendCode) return;
+  const order = state.orders.find(o => o.code === extendCode);
+  const minutes = parseInt(document.getElementById('extend-minutes').value) || 30;
+  const price = parseFloat(document.getElementById('extend-price').value) || 0;
+  if (minutes === 0) {
+    // 升不限时：设 minutes = 0
+    if (!confirm(`确定将手机尾号 ${extendCode} 升级为不限时？\n补差价 ¥${price.toFixed(1)}`)) return;
+  } else {
+    if (!confirm(`确定续时 ${minutes} 分钟，追加 ¥${price}？`)) return;
+  }
+  const result = await extendOrderAPI(extendCode, minutes, price);
+  if (result) {
+    // 乐观更新本地数据
+    if (order) {
+      if (minutes === 0) {
+        order.minutes = 0; // 升不限时
+      } else {
+        order.minutes += minutes;
+      }
+      order.price += price;
+    }
+    renderOrders();
+    toast(`✅ 已续时 · 手机尾号：${extendCode}`);
+  } else {
+    toast('续时失败，请稍后重试');
+  }
+  closeDialog('dialog-extend');
+  extendCode = null;
+}
+
 async function deleteOrder(code) {
   if (!confirm(`确定要删除手机尾号 ${code} 吗？\n删除后不可恢复。`)) return;
   if (!confirm(`再次确认：删除手机尾号 ${code}？`)) return;
@@ -405,6 +505,7 @@ async function renderOrders() {
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
             <span class="order-status ${expired ? 'status-expired' : 'status-active'}">${expired ? '⚠️ 已到期' : remainStr}</span>
             <button class="btn btn-danger" style="font-size:0.75em;padding:4px 10px;margin:0" onclick="completeOrder('${o.code}')">完成</button>
+            ${o.minutes > 0 ? `<button style="font-size:0.70em;padding:4px 10px;margin:0;background:#d48080;color:#fff;border:none;border-radius:10px;cursor:pointer" onclick="showExtend('${o.code}')">续时</button>` : ''}
             <button class="btn btn-danger" style="font-size:0.70em;padding:4px 10px;margin:0;background:#fff;color:#999;border:1px solid #ddd" onclick="deleteOrder('${o.code}')">删除</button>
           </div>
         </div>
