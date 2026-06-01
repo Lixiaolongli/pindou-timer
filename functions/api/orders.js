@@ -17,6 +17,11 @@ export async function onRequest(context) {
     return new Response(null, { status: 204, headers: CORS });
   }
 
+  // 检查 KV 绑定是否可用
+  if (!env.PINDOU_KV) {
+    return new Response(JSON.stringify({ error: 'KV binding not found: PINDOU_KV' }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
+  }
+
   const raw = await env.PINDOU_KV.get('orders');
   let orders = raw ? JSON.parse(raw) : [];
 
