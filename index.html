@@ -303,10 +303,13 @@ async function doCreateOrder(minutes, price, type) {
 }
 
 async function completeOrder(code) {
-  await completeOrderAPI(code);
-  await loadOrders();
+  // 先本地刷新 UI（乐观更新）
+  const order = state.orders.find(o => o.code === code);
+  if (order) order.status = 'completed';
   renderOrders();
   toast('已标记完成');
+  // 异步提交 API
+  await completeOrderAPI(code);
 }
 
 async function doneAllExpired() {
@@ -340,10 +343,12 @@ async function clearRecords() {
 async function deleteOrder(code) {
   if (!confirm(`确定要删除订单号 ${code} 吗？\n删除后不可恢复。`)) return;
   if (!confirm(`再次确认：删除订单号 ${code}？`)) return;
-  await removeOrderAPI(code);
-  await loadOrders();
+  // 先本地刷新 UI（乐观更新）
+  state.orders = state.orders.filter(o => o.code !== code);
   renderOrders();
   toast(`已删除订单号：${code}`);
+  // 异步提交 API
+  await removeOrderAPI(code);
 }
 
 async function renderOrders() {
