@@ -586,9 +586,17 @@ function route() {
 }
 
 // ==================== 定期刷新管理面板 ====================
-setInterval(() => {
-  if (document.getElementById('page-admin').classList.contains('active')) {
-    renderOrders();
+let adminRefreshBusy = false;
+setInterval(async () => {
+  if (adminRefreshBusy) return;
+  adminRefreshBusy = true;
+  try {
+    if (document.getElementById('page-admin').classList.contains('active')) {
+      await loadOrders();
+      renderOrders();
+    }
+  } finally {
+    adminRefreshBusy = false;
   }
 }, 1000);
 
