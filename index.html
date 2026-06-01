@@ -289,7 +289,15 @@ async function doCreateOrder(minutes, price, type) {
   try {
     const u = new SpeechSynthesisUtterance(`订单号 ${order.code.split('').join(' ')}`);
     u.lang = 'zh-CN';
-    u.rate = 0.9;
+    u.rate = 0.7;
+    u.pitch = 1.1;
+    u.volume = 1;
+    // 尝试选择好听的中文语音
+    const voices = speechSynthesis.getVoices();
+    const zhVoice = voices.find(v => v.lang.startsWith('zh-CN') && v.name.includes('Tingting')) ||
+                     voices.find(v => v.lang.startsWith('zh-CN')) ||
+                     voices.find(v => v.lang === 'zh-CN');
+    if (zhVoice) u.voice = zhVoice;
     speechSynthesis.speak(u);
   } catch {}
 }
