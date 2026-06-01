@@ -581,11 +581,24 @@ function showQRCode() {
 
 // ==================== 路由 ====================
 // ==================== 登录 ====================
-const ADMIN_PASSWORD = 'Zjlq666';
+// 密码 SHA-256 哈希（前端不可逆）
+const ADMIN_PASSWORDS = [
+  '',
+  '7ce59530d2679fedc92e6c129958738bff3ded44b974e2687c50a19af4a2bee9',
+];
 
-function login() {
+async function sha256(text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function login() {
   const pw = document.getElementById('input-password').value.trim();
-  if (pw === ADMIN_PASSWORD) {
+  const hash = await sha256(pw);
+  if (ADMIN_PASSWORDS.includes(hash)) {
     sessionStorage.setItem('admin_logged_in', '1');
     route();
   } else {
