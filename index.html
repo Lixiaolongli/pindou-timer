@@ -292,9 +292,9 @@ async function doCreateOrder(minutes, price, type) {
     u.rate = 0.7;
     u.pitch = 1.1;
     u.volume = 1;
-    // 尝试选择好听的中文语音
+    // 优先女声中文语音
     const voices = speechSynthesis.getVoices();
-    const zhVoice = voices.find(v => v.lang.startsWith('zh-CN') && v.name.includes('Tingting')) ||
+    const zhVoice = voices.find(v => v.lang.startsWith('zh-CN') && (v.name.includes('Tingting') || v.name.includes('Meijia') || v.name.includes('Yaoyao') || v.name.includes('Huihui') || v.name.includes('Google'))) ||
                      voices.find(v => v.lang.startsWith('zh-CN')) ||
                      voices.find(v => v.lang === 'zh-CN');
     if (zhVoice) u.voice = zhVoice;
