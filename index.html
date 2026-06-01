@@ -470,8 +470,16 @@ function showTimer(order) {
 }
 
 function updateTimerDisplay(order) {
-  const endAt = order.minutes > 0 ? order.startTime + order.minutes * 60 * 1000 : null;
-  const remain = endAt ? Math.max(0, Math.ceil((endAt - Date.now()) / 1000)) : 0;
+  // 不限时
+  if (order.minutes === 0) {
+    document.getElementById('timer-number').textContent = '♾️';
+    document.getElementById('timer-label').textContent = '不限时畅玩';
+    document.getElementById('timer-number').classList.remove('warning');
+    document.getElementById('timer-expired').style.display = 'none';
+    return;
+  }
+  const endAt = order.startTime + order.minutes * 60 * 1000;
+  const remain = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
   const el = document.getElementById('timer-number');
   const label = document.getElementById('timer-label');
   const expiredEl = document.getElementById('timer-expired');
