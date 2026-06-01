@@ -329,6 +329,15 @@ async function clearRecords() {
   toast('已清除完成记录');
 }
 
+async function deleteOrder(code) {
+  if (!confirm(`确定要删除订单号 ${code} 吗？\n删除后不可恢复。`)) return;
+  if (!confirm(`再次确认：删除订单号 ${code}？`)) return;
+  await removeOrderAPI(code);
+  await loadOrders();
+  renderOrders();
+  toast(`已删除订单号：${code}`);
+}
+
 async function renderOrders() {
   await loadOrders();
   const active = state.orders.filter(o => o.status === 'active');
@@ -355,6 +364,7 @@ async function renderOrders() {
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
             <span class="order-status ${expired ? 'status-expired' : 'status-active'}">${expired ? '⚠️ 已到期' : remainStr}</span>
             <button class="btn btn-danger" style="font-size:0.75em;padding:4px 10px;margin:0" onclick="completeOrder('${o.code}')">完成</button>
+            <button class="btn btn-danger" style="font-size:0.70em;padding:4px 10px;margin:0;background:#fff;color:#999;border:1px solid #ddd" onclick="deleteOrder('${o.code}')">删除</button>
           </div>
         </div>
       `;
