@@ -297,10 +297,9 @@ function quickOrder(minutes, price, type, name) {
   document.getElementById('order-minutes').value = minutes || 60;
   document.getElementById('order-price').value = price;
   document.getElementById('order-type').value = type;
-  document.getElementById('order-code').value = '';
-  document.getElementById('order-code').focus();
-  // 弹出对话框让店员输入手机号后下单
+  // 不清空已有手机号，让店员先输入也可以
   document.getElementById('dialog-order').classList.add('show');
+  document.getElementById('order-code').focus();
 }
 
 function showNewOrder() {
