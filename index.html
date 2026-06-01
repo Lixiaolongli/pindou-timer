@@ -443,29 +443,37 @@ function showTimer(order) {
   document.getElementById('timer-code').textContent = order.code;
   document.getElementById('timer-package').textContent = `${order.type === 'double' ? '双人' : '单人'} · ¥${order.price}${order.minutes > 0 ? ' · ' + order.minutes + '分钟' : ' · 不限时'}`;
 
-  // 顾客端定时刷新数据
-  if (state.timerInterval) clearInterval(state.timerInterval);
-  state.timerInterval = setInterval(async () => {
-    await loadOrders();
-    const o = state.orders.find(o => o.code === state.currentCode);
-    if (!o || o.status !== 'active') {
-      clearInterval(state.timerInterval);
-      document.getElementById('timer-number').textContent = '--:--';
-      document.getElementById('timer-label').textContent = '订单已结束';
-      backToCode();
-      return;
-    }
-    updateTimerDisplay(o);
-  }, 5000);
-
   if (order.minutes === 0) {
-    // 不限时
+    // 不限时：不启动定时器，只定期检查订单是否被删除
     document.getElementById('timer-number').textContent = '♾️';
     document.getElementById('timer-label').textContent = '不限时畅玩';
     document.getElementById('timer-number').classList.remove('warning');
     document.getElementById('timer-expired').style.display = 'none';
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(async () => {
+      await loadOrders();
+      const o = state.orders.find(o => o.code === state.currentCode);
+      if (!o || o.status !== 'active') {
+        clearInterval(state.timerInterval);
+        backToCode();
+      }
+    }, 5000);
   } else {
     updateTimerDisplay(order);
+    // 限时订单：每秒刷新倒计时
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(async () => {
+      await loadOrders();
+      const o = state.orders.find(o => o.code === state.currentCode);
+      if (!o || o.status !== 'active') {
+        clearInterval(state.timerInterval);
+        document.getElementById('timer-number').textContent = '--:--';
+        document.getElementById('timer-label').textContent = '订单已结束';
+        backToCode();
+        return;
+      }
+      updateTimerDisplay(o);
+    }, 5000);
   }
 }
 
