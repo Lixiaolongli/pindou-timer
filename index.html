@@ -121,6 +121,7 @@ input:focus, select:focus { border-color: #d48080; }
   <div class="admin-bar">
     <button class="btn btn-primary" onclick="showNewOrder()">+ 新订单</button>
     <button class="btn btn-outline" id="btn-qr" onclick="showQRCode()">📱 顾客扫码</button>
+    <button class="btn btn-outline" onclick="exportCSV()">📥 导出</button>
   </div>
 
   <!-- 进行中的订单 -->
@@ -546,6 +547,36 @@ setInterval(() => {
     renderOrders();
   }
 }, 5000);
+
+// ==================== 导出 ====================
+async function exportCSV() {
+  await loadOrders();
+  if (state.orders.length === 0) {
+    toast('暂无数据可导出');
+    return;
+  }
+  // CSV 表头
+  let csv = '订单号,类型,价格,时长(分钟),状态,开始时间,结束时间\n';
+  state.orders.forEach(o => {
+    const start = new Date(o.startTime).toLocaleString('zh-CN');
+    const end = o.endTime ? new Date(o.endTime).toLocaleString('zh-CN') : '';
+    const type = o.type === 'double' ? '双人' : '单人';
+    const status = o.status === 'active' ? '进行中' : '已完成';
+    csv += `${o.code},${type},${o.price},${o.minutes > 0 ? o.minutes : '不限时'},${status},${start},${end}\n`;
+  });
+  // BOM 头解决 Excel 中文乱码
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  a.download = `拼豆订单_${dateStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`已导出 ${state.orders.length} 条记录`);
+}
 
 // 启动
 route();
