@@ -171,30 +171,49 @@ input:focus, select:focus { border-color: #d48080; }
 
 <script>
 // ==================== 数据层 ====================
-const STORAGE_KEY = 'pindou_orders';
+const API_BASE = '/api';
 const state = {
   orders: [],
   currentCode: null,
   timerInterval: null,
 };
 
-function loadOrders() {
+async function loadOrders() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    state.orders = raw ? JSON.parse(raw) : [];
+    const res = await fetch(`${API_BASE}/orders`);
+    state.orders = res.ok ? await res.json() : [];
   } catch { state.orders = []; }
 }
 
-function saveOrders() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.orders));
+async function createOrderAPI(orderData) {
+  try {
+    const res = await fetch(`${API_BASE}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData),
+    });
+    return res.ok ? await res.json() : null;
+  } catch { return null; }
 }
 
-function generateCode() {
-  // 生成4位不重复订单号
-  const codes = new Set(state.orders.filter(o => o.status === 'active').map(o => o.code));
-  let code;
-  do { code = String(Math.floor(1000 + Math.random() * 9000)); } while (codes.has(code));
-  return code;
+async function completeOrderAPI(code) {
+  try {
+    await fetch(`${API_BASE}/orders/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+  } catch {}
+}
+
+async function removeOrderAPI(code) {
+  try {
+    await fetch(`${API_BASE}/orders/remove`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+  } catch {}
 }
 
 // ==================== 种类 ====================
@@ -255,70 +274,64 @@ function createOrder() {
   closeDialog('dialog-order');
 }
 
-function doCreateOrder(minutes, price, type) {
-  const code = generateCode();
-  const now = Date.now();
-  const order = {
-    code,
-    minutes,
-    price,
-    type,
-    startAt: now,
-    endAt: minutes > 0 ? now + minutes * 60 * 1000 : null, // 0 = 不限时
-    status: 'active',
-  };
-  state.orders.unshift(order);
-  saveOrders();
+async function doCreateOrder(minutes, price, type) {
+  const order = await createOrderAPI({ minutes, price, type });
+  if (!order) {
+    toast('创建失败，请稍后重试');
+    return;
+  }
+  await loadOrders();
   renderOrders();
-  toast(`✅ 下单成功 订单号：${code}`);
+  toast(`✅ 下单成功 订单号：${order.code}`);
 
-  // 语音播报订单号（可选）
+  // 语音播报订单号
   try {
-    const u = new SpeechSynthesisUtterance(`订单号 ${code.split('').join(' ')}`);
+    const u = new SpeechSynthesisUtterance(`订单号 ${order.code.split('').join(' ')}`);
     u.lang = 'zh-CN';
     u.rate = 0.9;
     speechSynthesis.speak(u);
   } catch {}
 }
 
-function completeOrder(code) {
-  const order = state.orders.find(o => o.code === code);
-  if (order) {
-    order.status = 'done';
-    saveOrders();
-    renderOrders();
-    toast('已标记完成');
-  }
+async function completeOrder(code) {
+  await completeOrderAPI(code);
+  await loadOrders();
+  renderOrders();
+  toast('已标记完成');
 }
 
-function doneAllExpired() {
+async function doneAllExpired() {
   let count = 0;
-  state.orders.forEach(o => {
-    if (o.status === 'active' && o.endAt && Date.now() >= o.endAt) {
-      o.status = 'done';
+  const now = Date.now();
+  for (const o of state.orders) {
+    if (o.status === 'active' && o.minutes > 0 && o.startTime + o.minutes * 60 * 1000 <= now) {
+      await completeOrderAPI(o.code);
       count++;
     }
-  });
+  }
+  await loadOrders();
+  renderOrders();
   if (count > 0) {
-    saveOrders();
-    renderOrders();
     toast(`已标记 ${count} 个到期订单`);
   } else {
     toast('没有到期的订单');
   }
 }
 
-function clearRecords() {
-  state.orders = state.orders.filter(o => o.status === 'active');
-  saveOrders();
+async function clearRecords() {
+  const done = state.orders.filter(o => o.status === 'completed');
+  for (const o of done) {
+    await removeOrderAPI(o.code);
+  }
+  await loadOrders();
   renderOrders();
   toast('已清除完成记录');
 }
 
-function renderOrders() {
-  loadOrders();
+async function renderOrders() {
+  await loadOrders();
   const active = state.orders.filter(o => o.status === 'active');
-  const done = state.orders.filter(o => o.status === 'done');
+  const done = state.orders.filter(o => o.status === 'completed');
 
   document.getElementById('active-count').textContent = active.length;
 
@@ -327,9 +340,10 @@ function renderOrders() {
     activeEl.innerHTML = '<div style="color:#999;text-align:center;padding:20px">暂无进行中的订单</div>';
   } else {
     activeEl.innerHTML = active.map(o => {
-      const remain = o.endAt ? Math.max(0, Math.ceil((o.endAt - Date.now()) / 1000)) : null;
-      const remainStr = o.endAt === null ? '不限时♾️' : formatRemain(remain);
-      const expired = o.endAt && Date.now() >= o.endAt;
+      const endAt = o.minutes > 0 ? o.startTime + o.minutes * 60 * 1000 : null;
+      const remain = endAt ? Math.max(0, Math.ceil((endAt - Date.now()) / 1000)) : null;
+      const remainStr = endAt === null ? '不限时♾️' : formatRemain(remain);
+      const expired = endAt && Date.now() >= endAt;
       return `
         <div class="order-item">
           <div class="order-left">
@@ -382,13 +396,13 @@ function initCustomer() {
   }
 }
 
-function lookupOrder() {
+async function lookupOrder() {
   const code = document.getElementById('input-code').value.trim();
   if (code.length < 4) {
     toast('请输入4位订单号');
     return;
   }
-  loadOrders();
+  await loadOrders();
   const order = state.orders.find(o => o.code === code && o.status === 'active');
   if (!order) {
     toast('订单不存在或已结束');
@@ -404,6 +418,20 @@ function showTimer(order) {
   document.getElementById('timer-code').textContent = order.code;
   document.getElementById('timer-package').textContent = `${order.type === 'double' ? '双人' : '单人'} · ¥${order.price}${order.minutes > 0 ? ' · ' + order.minutes + '分钟' : ' · 不限时'}`;
 
+  // 顾客端定时刷新数据
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(async () => {
+    await loadOrders();
+    const o = state.orders.find(o => o.code === state.currentCode);
+    if (!o || o.status !== 'active') {
+      clearInterval(state.timerInterval);
+      document.getElementById('timer-number').textContent = '--:--';
+      document.getElementById('timer-label').textContent = '订单已结束';
+      return;
+    }
+    updateTimerDisplay(o);
+  }, 5000);
+
   if (order.minutes === 0) {
     // 不限时
     document.getElementById('timer-number').textContent = '♾️';
@@ -412,24 +440,12 @@ function showTimer(order) {
     document.getElementById('timer-expired').style.display = 'none';
   } else {
     updateTimerDisplay(order);
-    // 每秒更新
-    if (state.timerInterval) clearInterval(state.timerInterval);
-    state.timerInterval = setInterval(() => {
-      loadOrders();
-      const o = state.orders.find(o => o.code === state.currentCode);
-      if (!o || o.status !== 'active') {
-        clearInterval(state.timerInterval);
-        document.getElementById('timer-number').textContent = '--:--';
-        document.getElementById('timer-label').textContent = '订单已结束';
-        return;
-      }
-      updateTimerDisplay(o);
-    }, 1000);
   }
 }
 
 function updateTimerDisplay(order) {
-  const remain = order.endAt ? Math.max(0, Math.ceil((order.endAt - Date.now()) / 1000)) : 0;
+  const endAt = order.minutes > 0 ? order.startTime + order.minutes * 60 * 1000 : null;
+  const remain = endAt ? Math.max(0, Math.ceil((endAt - Date.now()) / 1000)) : 0;
   const el = document.getElementById('timer-number');
   const label = document.getElementById('timer-label');
   const expiredEl = document.getElementById('timer-expired');
