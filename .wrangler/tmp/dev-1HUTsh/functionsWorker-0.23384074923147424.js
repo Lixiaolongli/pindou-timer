@@ -48,6 +48,7 @@ async function onRequest(context) {
     const merchants = JSON.parse(raw);
     const m = merchants.find((x) => x.phone === phone);
     if (!m) return json({ ok: false, error: "\u8D26\u53F7\u4E0D\u5B58\u5728" }, 401);
+    if (m.status === "disabled") return json({ ok: false, error: "\u8D26\u53F7\u5DF2\u88AB\u7981\u7528" }, 403);
     if (m.status === "expired") return json({ ok: false, error: "\u4F1A\u5458\u5DF2\u5230\u671F" }, 403);
     const hash = await sha256(password);
     if (hash !== m.password) return json({ ok: false, error: "\u5BC6\u7801\u9519\u8BEF" }, 401);

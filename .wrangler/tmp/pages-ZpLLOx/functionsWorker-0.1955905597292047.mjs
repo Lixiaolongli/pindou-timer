@@ -43,6 +43,7 @@ async function onRequest(context) {
     const merchants = JSON.parse(raw);
     const m = merchants.find((x) => x.phone === phone);
     if (!m) return json({ ok: false, error: "\u8D26\u53F7\u4E0D\u5B58\u5728" }, 401);
+    if (m.status === "disabled") return json({ ok: false, error: "\u8D26\u53F7\u5DF2\u88AB\u7981\u7528" }, 403);
     if (m.status === "expired") return json({ ok: false, error: "\u4F1A\u5458\u5DF2\u5230\u671F" }, 403);
     const hash = await sha256(password);
     if (hash !== m.password) return json({ ok: false, error: "\u5BC6\u7801\u9519\u8BEF" }, 401);
@@ -729,7 +730,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-iXlo49/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-ZlbJH9/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -761,7 +762,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-iXlo49/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-ZlbJH9/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

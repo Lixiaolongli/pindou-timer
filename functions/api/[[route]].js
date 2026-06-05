@@ -44,6 +44,7 @@ export async function onRequest(context) {
     const merchants = JSON.parse(raw);
     const m = merchants.find(x => x.phone === phone);
     if (!m) return json({ ok: false, error: '账号不存在' }, 401);
+    if (m.status === 'disabled') return json({ ok: false, error: '账号已被禁用' }, 403);
     if (m.status === 'expired') return json({ ok: false, error: '会员已到期' }, 403);
     const hash = await sha256(password);
     if (hash !== m.password) return json({ ok: false, error: '密码错误' }, 401);
