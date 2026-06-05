@@ -5,61 +5,79 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>拼豆计时器</title>
 <style>
+:root{--c1:#d48080;--c2:#e8a87c;--c3:#6a9fb5;--c4:#c8a8d0;--bg:#faf7f2;--card:#fff;--text:#3a3a3a;--muted:#8a8078;--border:#ebe3d8;--shadow:0 1px 3px rgba(0,0,0,.04),0 4px 20px rgba(0,0,0,.06);--radius:16px;--radius-sm:10px}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:#f5f0eb;min-height:100vh;color:#333}
-.page{display:none;padding:20px;max-width:500px;margin:0 auto}
-.page.active{display:block}
-.header{text-align:center;padding:30px 0 20px}
-.header h1{font-size:1.4em;color:#d48080;margin-bottom:4px}
-.header .sub{font-size:.8em;color:#999}
-.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
-.card-title{font-size:.85em;color:#999;margin-bottom:12px}
-input,select{width:100%;padding:12px;border:1.5px solid #e8e0d8;border-radius:10px;font-size:1em;background:#faf8f5;outline:0;margin-top:8px}
-input:focus,select:focus{border-color:#d48080}
-.btn{width:100%;padding:14px;border:0;border-radius:10px;font-size:1em;font-weight:600;cursor:pointer;margin-top:12px}
-.btn:active{opacity:.8}
-.btn-primary{background:#d48080;color:#fff}
-.btn-outline{background:#fff;color:#d48080;border:1.5px solid #d48080}
-.btn-sm{padding:8px 14px;font-size:.8em;width:auto;margin-top:4px}
-.btn-danger{color:#e74c3c;border:1.5px solid #e74c3c;background:#fff}
-.timer-display{text-align:center;padding:30px 0}
-.timer-number{font-size:4em;font-weight:700;font-variant-numeric:tabular-nums}
-.timer-number.warning{color:#e74c3c;animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-.timer-label{font-size:.9em;color:#999;margin-top:8px}
-.code-badge{display:inline-block;background:#d48080;color:#fff;padding:6px 16px;border-radius:20px;font-weight:700;font-size:1.2em;letter-spacing:4px;margin:8px 0}
-.order-item{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #f0ece5}
-.order-item:last-child{border-bottom:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);min-height:100vh;color:var(--text);background-image:radial-gradient(circle at 15% 10%,rgba(212,128,128,.06) 0%,transparent 50%),radial-gradient(circle at 85% 90%,rgba(200,168,208,.06) 0%,transparent 50%),radial-gradient(circle at 50% 50%,rgba(106,159,181,.04) 0%,transparent 50%)}
+.page{display:none;padding:20px 16px;max-width:480px;margin:0 auto}
+.page.active{display:block;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.header{padding:36px 0 16px;text-align:center;position:relative}
+.header::after{content:'';display:block;width:40px;height:3px;background:linear-gradient(90deg,var(--c1),var(--c2));border-radius:2px;margin:16px auto 0;opacity:.6}
+.header h1{font-size:1.5em;font-weight:800;color:var(--c1);letter-spacing:.5px;margin-bottom:6px}
+.header .sub{font-size:.8em;color:var(--muted);font-weight:400}
+.card{background:var(--card);border-radius:var(--radius);padding:20px 18px;margin-bottom:14px;box-shadow:var(--shadow);border:1px solid var(--border);transition:box-shadow .2s}
+.card:hover{box-shadow:0 2px 8px rgba(0,0,0,.06),0 6px 24px rgba(0,0,0,.08)}
+.card-title{font-size:.8em;color:var(--muted);margin-bottom:14px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.card-title::before{content:'· ';color:var(--c1)}
+input,select{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:1em;background:#fafaf8;outline:0;margin-top:10px;transition:border-color .2s,box-shadow .2s;color:var(--text)}
+input:focus,select:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(212,128,128,.12)}
+input::placeholder{color:#c5bdb5}
+.btn{width:100%;padding:14px;border:0;border-radius:var(--radius-sm);font-size:1em;font-weight:600;cursor:pointer;margin-top:14px;transition:all .15s;letter-spacing:.5px}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--c1),#c57070);color:#fff;box-shadow:0 3px 12px rgba(212,128,128,.3)}
+.btn-primary:hover{box-shadow:0 4px 18px rgba(212,128,128,.4);transform:translateY(-1px)}
+.btn-primary:active{transform:scale(.97)}
+.btn-outline{background:var(--card);color:var(--c1);border:1.5px solid var(--c1);font-weight:500}
+.btn-outline:hover{background:rgba(212,128,128,.04)}
+.btn-sm{padding:7px 12px;font-size:.78em;width:auto;margin-top:4px;border-radius:8px}
+.btn-danger{color:#d9534f;border:1.5px solid #d9534f;background:var(--card)}
+.btn-danger:hover{background:rgba(217,83,79,.04)}
+.timer-display{text-align:center;padding:32px 0 20px}
+.timer-number{font-size:4.2em;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text);font-feature-settings:"tnum"}
+.timer-number.warning{color:#e74c3c;animation:timerPulse 1s infinite}
+@keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.65;transform:scale(1.03)}}
+.timer-label{font-size:.85em;color:var(--muted);margin-top:6px}
+.code-badge{display:inline-block;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;padding:7px 20px;border-radius:20px;font-weight:700;font-size:1.1em;letter-spacing:5px;margin:8px 0;box-shadow:0 2px 8px rgba(212,128,128,.25)}
+.order-item{display:flex;justify-content:space-between;align-items:center;padding:14px 12px;border-radius:12px;margin-bottom:6px;background:#fefdfa;border:1px solid transparent;transition:border-color .15s}
+.order-item:hover{border-color:var(--border)}
 .order-left{flex:1}
-.order-code{font-size:.75em;color:#999;margin-bottom:2px}
-.order-name{font-weight:600}
-.order-time{font-size:.85em;color:#666;margin-top:2px}
-.order-status{font-weight:600;font-size:.9em}
+.order-code{font-size:.75em;color:var(--muted);margin-bottom:3px;letter-spacing:1px}
+.order-name{font-weight:600;font-size:.95em}
+.order-time{font-size:.82em;color:#9a9088;margin-top:3px}
+.order-status{font-weight:600;font-size:.85em;padding:4px 10px;border-radius:12px;background:#f5f2ec}
 .status-active{color:#27ae60}
 .status-expired{color:#e74c3c}
-.status-done{color:#999}
-.admin-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.admin-bar .btn{flex:1;margin-top:0;font-size:.8em;padding:10px 6px}
+.status-done{color:var(--muted)}
+.admin-bar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.admin-bar .btn{flex:1;margin-top:0;font-size:.78em;padding:10px 6px;font-weight:500;min-width:0}
 .package-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.package-btn{padding:14px 10px;border:1.5px solid #e8e0d8;border-radius:10px;background:#fff;text-align:center;cursor:pointer}
-.package-btn:active{background:#fef5f5;border-color:#d48080}
-.pkg-name{font-weight:600;font-size:.95em}
-.pkg-price{color:#d48080;font-size:.85em;margin-top:2px}
-.dialog-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:flex-end}
-.dialog-overlay.show{display:flex}
-.dialog{background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto}
-.qr-wrap{text-align:center;padding:10px 0}
-.qr-wrap img{border-radius:12px;max-width:200px}
-.qr-url{color:#999;font-size:.75em;margin-top:8px;word-break:break-all}
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:20px;font-size:.9em;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.package-btn{padding:16px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--card);text-align:center;cursor:pointer;transition:all .15s}
+.package-btn:hover{border-color:var(--c1);background:#fef8f6}
+.package-btn:active{background:#fef5f5;border-color:var(--c1);transform:scale(.96)}
+.pkg-name{font-weight:700;font-size:.95em;color:var(--text)}
+.pkg-price{color:var(--c1);font-size:.85em;margin-top:3px;font-weight:600}
+.dialog-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:100;justify-content:center;align-items:flex-end}
+.dialog-overlay.show{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.dialog{background:var(--card);border-radius:20px 20px 0 0;padding:28px 22px 22px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;box-shadow:0 -4px 30px rgba(0,0,0,.1)}
+.dialog h3{font-size:1.1em;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.dialog label{font-size:.8em;color:var(--muted);display:block;margin-top:14px;font-weight:600}
+.qr-wrap{text-align:center;padding:12px 0}
+.qr-wrap img{border-radius:14px;max-width:200px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.qr-url{color:var(--muted);font-size:.75em;margin-top:10px;word-break:break-all;background:#fafaf8;padding:8px 12px;border-radius:8px;display:inline-block}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#3a3a3a;color:#fff;padding:11px 26px;border-radius:24px;font-size:.9em;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.15);font-weight:500;letter-spacing:.3px}
 .toast.show{opacity:1}
-.expired-tip{display:block;font-size:.9em;color:#e74c3c;margin-top:8px}
-.empty-text{font-size:1em;color:#999;padding:30px 0;text-align:center}
-.merchant-item{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #f0ece5}
-.merchant-info{flex:1}
-.merchant-phone{font-weight:600}
-.merchant-meta{font-size:.75em;color:#999;margin-top:2px}
-.merchant-actions{display:flex;gap:6px}
+.expired-tip{display:block;font-size:.85em;color:#d9534f;margin-top:8px;font-weight:500}
+.empty-text{font-size:.95em;color:var(--muted);padding:32px 0;text-align:center;opacity:.7}
+.merchant-item{display:flex;justify-content:space-between;align-items:center;padding:14px 12px;border-bottom:1px solid var(--border);transition:background .15s}
+.merchant-item:last-child{border-bottom:0}
+.merchant-item:hover{background:#fefdfa}
+.merchant-info{flex:1;min-width:0}
+.merchant-phone{font-weight:600;font-size:.95em}
+.merchant-meta{font-size:.75em;color:var(--muted);margin-top:3px}
+.merchant-actions{display:flex;gap:6px;flex-shrink:0}
+.logo-icon{font-size:2.2em;display:block;margin-bottom:8px}
+.footer-note{text-align:center;color:var(--muted);font-size:.75em;padding:8px 0 24px;opacity:.6}
 </style>
 </head>
 <body>
@@ -90,19 +108,19 @@ input:focus,select:focus{border-color:#d48080}
 
 <!-- ====== 登录页 ====== -->
 <div class="page" id="page-login">
-  <div class="header"><h1>🧩 拼豆计时器</h1><div class="sub">商家管理后台</div></div>
+  <div class="header"><span class="logo-icon">🧩</span><h1>拼豆计时器</h1><div class="sub">商家管理后台</div></div>
   <div class="card">
     <div class="card-title">手机号 + 密码登录</div>
-    <input type="tel" id="login-phone" placeholder="手机号" maxlength="11">
+    <input type="tel" id="login-phone" placeholder="手机号" maxlength="11" autofocus>
     <input type="password" id="login-pw" placeholder="密码">
     <button class="btn btn-primary" onclick="login()">登 录</button>
   </div>
-  <div class="card" style="text-align:center;color:#999;font-size:.8em">商家请使用管理员分配的账号登录</div>
+  <div class="footer-note">商家账号由管理员分配</div>
 </div>
 
 <!-- ====== 管理员面板 ====== -->
 <div class="page" id="page-admin">
-  <div class="header"><h1>🧩 管理后台</h1><div class="sub">管理员 · <span id="admin-name"></span></div></div>
+  <div class="header"><span class="logo-icon">⚙️</span><h1>管理后台</h1><div class="sub">管理员 · <span id="admin-name"></span></div></div>
   <div class="admin-bar">
     <button class="btn btn-primary" onclick="showAddMerchant()">+ 添加商家</button>
     <button class="btn btn-outline" onclick="logout()">退出</button>
@@ -115,7 +133,7 @@ input:focus,select:focus{border-color:#d48080}
 
 <!-- ====== 商家面板 ====== -->
 <div class="page" id="page-merchant">
-  <div class="header"><h1>🧩 拼豆计时</h1><div class="sub" id="merchant-shop-name"></div></div>
+  <div class="header"><span class="logo-icon">🧩</span><h1>拼豆计时</h1><div class="sub" id="merchant-shop-name"></div></div>
   <div class="admin-bar">
     <button class="btn btn-primary" onclick="showNewOrder()">+ 新订单</button>
     <button class="btn btn-outline" onclick="showQRCode()">📱 顾客入口</button>
