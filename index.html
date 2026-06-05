@@ -277,12 +277,13 @@ async function loadMerchants(){
   $('merchant-list').innerHTML=ms.map(m=>{
     const exp=m.expireTime?new Date(m.expireTime).toLocaleDateString('zh-CN'):'无';
     const st=m.status==='expired'?'🔴 已到期':m.status==='disabled'?'⚫ 已禁用':'🟢 正常';
+    const isAdmin = m.role === 'admin';
     return `<div class="merchant-item">
       <div class="merchant-info"><div class="merchant-phone">${m.phone}${m.name?' · '+m.name:''}</div><div class="merchant-meta">${st} · 到期:${exp} · 角色:${m.role}</div></div>
       <div class="merchant-actions">
-        <button class="btn btn-sm btn-outline" onclick="showRenew('${m.phone}')">续费</button>
+        ${isAdmin ? '' : `<button class="btn btn-sm btn-outline" onclick="showRenew('${m.phone}')">续费</button>
         <button class="btn btn-sm btn-danger" onclick="disableMerchant('${m.phone}')">禁用</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteMerchant('${m.phone}')">删除</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteMerchant('${m.phone}')">删除</button>`}
       </div></div>`;
   }).join('');
 }
