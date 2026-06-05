@@ -264,6 +264,7 @@ function route(){
 
 // ====== 管理员 ======
 async function showAdmin(){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   $('page-admin').classList.add('active');
   $('admin-name').textContent=userPhone;
   await loadMerchants();
@@ -314,6 +315,7 @@ async function deleteMerchant(phone){
 
 // ====== 商家 ======
 async function showMerchant(){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   $('page-merchant').classList.add('active');
   const r=await api('GET','/shops');
   if(!r||!r.ok) return toast('加载店铺失败');
