@@ -78,10 +78,34 @@ input::placeholder{color:#c5bdb5}
 .merchant-actions{display:flex;gap:6px;flex-shrink:0}
 .logo-icon{font-size:2.2em;display:block;margin-bottom:8px}
 .footer-note{text-align:center;color:var(--muted);font-size:.75em;padding:8px 0 24px;opacity:.6}
-.feature-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:20px}
-.feature-item{background:var(--card);border-radius:var(--radius-sm);padding:14px 6px 10px;text-align:center;font-size:1.5em;box-shadow:var(--shadow);border:1px solid var(--border);transition:all .2s}
-.feature-item:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.08)}
-.feature-item div{font-size:.5em;color:var(--muted);margin-top:6px;font-weight:500}
+/* 拼豆装饰 */
+.beads-bg{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;overflow:hidden}
+.bead{position:absolute;border-radius:50%;opacity:.12}
+.bead.b1{width:40px;height:40px;background:#d48080;top:12%;left:8%;animation:beadFloat 8s ease-in-out infinite}
+.bead.b2{width:28px;height:28px;background:#e8a87c;top:20%;right:12%;animation:beadFloat 9s 1s ease-in-out infinite}
+.bead.b3{width:20px;height:20px;background:#6a9fb5;top:30%;left:18%;animation:beadFloat 7.5s .5s ease-in-out infinite}
+.bead.b4{width:32px;height:32px;background:#c8a8d0;top:8%;right:25%;animation:beadFloat 10s 2s ease-in-out infinite}
+.bead.b5{width:16px;height:16px;background:#d48080;top:40%;right:8%;animation:beadFloat 6s 1.5s ease-in-out infinite}
+.bead.b6{width:24px;height:24px;background:#e8a87c;top:35%;left:6%;animation:beadFloat 8.5s .8s ease-in-out infinite}
+.bead.b7{width:18px;height:18px;background:#c8a8d0;top:55%;right:15%;animation:beadFloat 7s 2.2s ease-in-out infinite}
+.bead.b8{width:30px;height:30px;background:#6a9fb5;top:50%;left:12%;animation:beadFloat 9.5s 1.2s ease-in-out infinite}
+.bead.b9{width:14px;height:14px;background:#e8a87c;top:60%;right:30%;animation:beadFloat 5.5s .3s ease-in-out infinite}
+.bead.b10{width:22px;height:22px;background:#d48080;top:70%;left:25%;animation:beadFloat 8s 1.8s ease-in-out infinite}
+.bead.b11{width:26px;height:26px;background:#c8a8d0;top:75%;right:10%;animation:beadFloat 7.8s .6s ease-in-out infinite}
+.bead.b12{width:19px;height:19px;background:#6a9fb5;top:65%;left:5%;animation:beadFloat 6.5s 2.5s ease-in-out infinite}
+@keyframes beadFloat{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-12px) rotate(5deg)}50%{transform:translateY(-4px) rotate(-3deg)}75%{transform:translateY(-16px) rotate(4deg)}}
+/* 拼豆logo */
+.logo-wrap{display:grid;grid-template-columns:repeat(3,18px);gap:4px;justify-content:center;margin-bottom:12px}
+.logo-bead{width:18px;height:18px;border-radius:50%;background:#d48080;box-shadow:inset -2px -2px 4px rgba(0,0,0,.1),inset 2px 2px 4px rgba(255,255,255,.3)}
+.logo-bead:nth-child(1){background:#f0a0a0}
+.logo-bead:nth-child(2){background:#e8a87c}
+.logo-bead:nth-child(3){background:#f0a0a0}
+.logo-bead:nth-child(4){background:#e8a87c}
+.logo-bead:nth-child(5).c{background:#6a9fb5}
+.logo-bead:nth-child(6){background:#c8a8d0}
+.logo-bead:nth-child(7){background:#c8a8d0}
+.logo-bead:nth-child(8){background:#f0a0a0}
+.logo-bead:nth-child(9){background:#e8a87c}
 </style>
 </head>
 <body>
@@ -112,14 +136,20 @@ input::placeholder{color:#c5bdb5}
 
 <!-- ====== 登录页 ====== -->
 <div class="page" id="page-login">
-  <div class="header"><span class="logo-icon">🧩</span><h1>拼豆计时器</h1><div class="sub">商家管理后台</div></div>
+  <!-- 拼豆装饰背景 -->
+  <div class="beads-bg">
+    <div class="bead b1"></div><div class="bead b2"></div><div class="bead b3"></div><div class="bead b4"></div><div class="bead b5"></div><div class="bead b6"></div>
+    <div class="bead b7"></div><div class="bead b8"></div><div class="bead b9"></div><div class="bead b10"></div><div class="bead b11"></div><div class="bead b12"></div>
+  </div>
   
-  <!-- 功能亮点 -->
-  <div class="feature-row">
-    <div class="feature-item">⏱️<div>自动计时</div></div>
-    <div class="feature-item">📱<div>扫码查看</div></div>
-    <div class="feature-item">📊<div>订单管理</div></div>
-    <div class="feature-item">💾<div>一键导出</div></div>
+  <div class="header">
+    <div class="logo-wrap">
+      <span class="logo-bead"></span><span class="logo-bead"></span><span class="logo-bead"></span>
+      <span class="logo-bead"></span><span class="logo-bead c"></span><span class="logo-bead"></span>
+      <span class="logo-bead"></span><span class="logo-bead"></span><span class="logo-bead"></span>
+    </div>
+    <h1>拼豆计时器</h1>
+    <div class="sub">手工坊智能计时管理系统</div>
   </div>
 
   <div class="card">
@@ -128,7 +158,7 @@ input::placeholder{color:#c5bdb5}
     <input type="password" id="login-pw" placeholder="密码">
     <button class="btn btn-primary" onclick="login()">登 录</button>
   </div>
-  <div class="footer-note">拼豆手工坊专属计时系统 · 商家账号由管理员分配</div>
+  <div class="footer-note">🧩 拼豆创意手工坊 · 让每一颗豆子都有温度</div>
 </div>
 
 <!-- ====== 管理员面板 ====== -->
