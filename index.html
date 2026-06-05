@@ -106,6 +106,16 @@ input::placeholder{color:#c5bdb5}
 .logo-bead:nth-child(7){background:#c8a8d0}
 .logo-bead:nth-child(8){background:#f0a0a0}
 .logo-bead:nth-child(9){background:#e8a87c}
+/* 拼豆底板网格 */
+.pegboard{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);display:flex;gap:6px;opacity:.06}
+.pegboard span{width:10px;height:10px;border-radius:50%;background:var(--c1);animation:pegGlow 3s ease-in-out infinite}
+.pegboard span:nth-child(1){animation-delay:0s}.pegboard span:nth-child(2){animation-delay:.3s}.pegboard span:nth-child(3){animation-delay:.6s}.pegboard span:nth-child(4){animation-delay:.9s}.pegboard span:nth-child(5){animation-delay:1.2s}.pegboard span:nth-child(6){animation-delay:1.5s}.pegboard span:nth-child(7){animation-delay:1.8s}.pegboard span:nth-child(8){animation-delay:2.1s}.pegboard span:nth-child(9){animation-delay:2.4s}.pegboard span:nth-child(10){animation-delay:2.7s}
+@keyframes pegGlow{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.6);background:var(--c2)}}
+/* 氛围标语 */
+.motto-card{text-align:center;padding:18px;margin-bottom:16px;position:relative;z-index:1}
+.motto-icon{font-size:2em;margin-bottom:6px;animation:mottoBounce 2s ease-in-out infinite}
+.motto-text{font-size:.82em;color:var(--muted);letter-spacing:2px;font-weight:400}
+@keyframes mottoBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 </style>
 </head>
 <body>
@@ -140,6 +150,10 @@ input::placeholder{color:#c5bdb5}
   <div class="beads-bg">
     <div class="bead b1"></div><div class="bead b2"></div><div class="bead b3"></div><div class="bead b4"></div><div class="bead b5"></div><div class="bead b6"></div>
     <div class="bead b7"></div><div class="bead b8"></div><div class="bead b9"></div><div class="bead b10"></div><div class="bead b11"></div><div class="bead b12"></div>
+    <!-- 拼豆底板网格 -->
+    <div class="pegboard">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
   </div>
   
   <div class="header">
@@ -150,6 +164,12 @@ input::placeholder{color:#c5bdb5}
     </div>
     <h1>拼豆计时器</h1>
     <div class="sub">手工坊智能计时管理系统</div>
+  </div>
+
+  <!-- 氛围标语 -->
+  <div class="motto-card">
+    <div class="motto-icon">🫘</div>
+    <div class="motto-text">一颗一颗 · 拼出美好时光</div>
   </div>
 
   <div class="card">
