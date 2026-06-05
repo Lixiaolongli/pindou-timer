@@ -53,9 +53,9 @@ async function onRequest(context) {
     const hash = await sha256(password);
     if (hash !== m.password) return json({ ok: false, error: "\u5BC6\u7801\u9519\u8BEF" }, 401);
     if (m.expireTime && Date.now() > m.expireTime) {
-      m.status = "expired";
+      m.status = "disabled";
       await env.PINDOU_KV.put("merchants", JSON.stringify(merchants));
-      return json({ ok: false, error: "\u4F1A\u5458\u5DF2\u5230\u671F" }, 403);
+      return json({ ok: false, error: "\u4F1A\u5458\u5DF2\u5230\u671F\uFF0C\u8D26\u53F7\u5DF2\u7981\u7528" }, 403);
     }
     const token = crypto.randomUUID();
     const tokens = JSON.parse(await env.PINDOU_KV.get("tokens") || "{}");
@@ -71,7 +71,7 @@ async function onRequest(context) {
     let changed = false;
     for (const m of merchants) {
       if (m.expireTime && Date.now() > m.expireTime && m.status === "active") {
-        m.status = "expired";
+        m.status = "disabled";
         changed = true;
       }
     }

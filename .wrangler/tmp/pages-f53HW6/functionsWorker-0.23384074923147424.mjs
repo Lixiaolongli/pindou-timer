@@ -48,9 +48,9 @@ async function onRequest(context) {
     const hash = await sha256(password);
     if (hash !== m.password) return json({ ok: false, error: "\u5BC6\u7801\u9519\u8BEF" }, 401);
     if (m.expireTime && Date.now() > m.expireTime) {
-      m.status = "expired";
+      m.status = "disabled";
       await env.PINDOU_KV.put("merchants", JSON.stringify(merchants));
-      return json({ ok: false, error: "\u4F1A\u5458\u5DF2\u5230\u671F" }, 403);
+      return json({ ok: false, error: "\u4F1A\u5458\u5DF2\u5230\u671F\uFF0C\u8D26\u53F7\u5DF2\u7981\u7528" }, 403);
     }
     const token = crypto.randomUUID();
     const tokens = JSON.parse(await env.PINDOU_KV.get("tokens") || "{}");
@@ -66,7 +66,7 @@ async function onRequest(context) {
     let changed = false;
     for (const m of merchants) {
       if (m.expireTime && Date.now() > m.expireTime && m.status === "active") {
-        m.status = "expired";
+        m.status = "disabled";
         changed = true;
       }
     }
@@ -730,7 +730,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-IEn9FZ/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-0rtmRy/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -762,7 +762,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-IEn9FZ/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-0rtmRy/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

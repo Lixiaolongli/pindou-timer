@@ -50,9 +50,9 @@ export async function onRequest(context) {
     if (hash !== m.password) return json({ ok: false, error: '密码错误' }, 401);
 
     if (m.expireTime && Date.now() > m.expireTime) {
-      m.status = 'expired';
+      m.status = 'disabled';
       await env.PINDOU_KV.put('merchants', JSON.stringify(merchants));
-      return json({ ok: false, error: '会员已到期' }, 403);
+      return json({ ok: false, error: '会员已到期，账号已禁用' }, 403);
     }
 
     const token = crypto.randomUUID();
@@ -71,7 +71,7 @@ export async function onRequest(context) {
     let changed = false;
     for (const m of merchants) {
       if (m.expireTime && Date.now() > m.expireTime && m.status === 'active') {
-        m.status = 'expired'; changed = true;
+        m.status = 'disabled'; changed = true;
       }
     }
     if (changed) await env.PINDOU_KV.put('merchants', JSON.stringify(merchants));
