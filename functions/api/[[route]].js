@@ -62,6 +62,24 @@ export async function onRequest(context) {
     return json({ ok: true, token, role: m.role, phone, name: m.name });
   }
 
+  // ============ 修改密码 ============
+  if (path === '/api/change-password' && request.method === 'POST') {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: '未登录' }, 401);
+    const { oldPassword, newPassword } = await request.json();
+    if (!oldPassword || !newPassword) return json({ ok: false, error: '缺少参数' }, 400);
+    if (newPassword.length < 4) return json({ ok: false, error: '新密码至少4位' }, 400);
+    const raw = await env.PINDOU_KV.get('merchants') || '[]';
+    let merchants = JSON.parse(raw);
+    const m = merchants.find(x => x.phone === user.phone);
+    if (!m) return json({ ok: false, error: '账号不存在' }, 404);
+    const hash = await sha256(oldPassword);
+    if (hash !== m.password) return json({ ok: false, error: '旧密码错误' }, 401);
+    m.password = await sha256(newPassword);
+    await env.PINDOU_KV.put('merchants', JSON.stringify(merchants));
+    return json({ ok: true });
+  }
+
   // ============ 管理员：商家列表 ============
   if (path === '/api/merchants' && request.method === 'GET') {
     const user = await auth(request, env);

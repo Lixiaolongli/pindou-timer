@@ -120,6 +120,7 @@ input:focus,select:focus{border-color:#d48080}
     <button class="btn btn-primary" onclick="showNewOrder()">+ 新订单</button>
     <button class="btn btn-outline" onclick="showQRCode()">📱 顾客入口</button>
     <button class="btn btn-outline" onclick="exportCSV()">📥 导出</button>
+    <button class="btn btn-outline" onclick="showChangePwd()">🔒 改密</button>
     <button class="btn btn-outline" onclick="logout()" style="color:#999">退出</button>
   </div>
   <div class="card" id="card-no-shop" style="display:none">
@@ -211,6 +212,21 @@ input:focus,select:focus{border-color:#d48080}
   </div>
 </div></div>
 
+<!-- ====== 修改密码弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-chpwd"><div class="dialog">
+  <h3 style="margin-bottom:16px">修改密码</h3>
+  <label>旧密码</label>
+  <input type="password" id="chpwd-old" placeholder="输入当前密码">
+  <label>新密码</label>
+  <input type="password" id="chpwd-new" placeholder="输入新密码">
+  <label>确认新密码</label>
+  <input type="password" id="chpwd-confirm" placeholder="再次输入新密码">
+  <div style="display:flex;gap:8px;margin-top:16px">
+    <button class="btn btn-outline" onclick="closeDlg('dlg-chpwd')" style="flex:1">取消</button>
+    <button class="btn btn-primary" onclick="doChangePwd()" style="flex:1">确认修改</button>
+  </div>
+</div></div>
+
 <script>
 const $=id=>document.getElementById(id);
 const API='/api';
@@ -245,6 +261,16 @@ async function login(){
 }
 
 function logout(){token='';userRole='';userPhone='';sessionStorage.clear();route()}
+function showChangePwd(){$('dlg-chpwd').classList.add('show');$('chpwd-old').value='';$('chpwd-new').value='';$('chpwd-confirm').value=''}
+async function doChangePwd(){
+  const oldPw=$('chpwd-old').value.trim(),newPw=$('chpwd-new').value.trim(),cfm=$('chpwd-confirm').value.trim();
+  if(!oldPw||!newPw) return toast('请填写新旧密码');
+  if(newPw!==cfm) return toast('两次新密码不一致');
+  if(newPw.length<4) return toast('新密码至少4位');
+  const r=await api('POST','/change-password',{oldPassword:oldPw,newPassword:newPw});
+  if(!r||!r.ok) return toast(r?r.error:'修改失败');
+  toast('✅ 密码修改成功');closeDlg('dlg-chpwd');
+}
 
 // ====== 路由 ======
 function route(){
