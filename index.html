@@ -2,796 +2,449 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>拼豆计时器</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f0eb; min-height: 100vh; color: #333; }
-.page { display: none; padding: 20px; max-width: 500px; margin: 0 auto; }
-.page.active { display: block; }
-
-/* 头部 */
-.header { text-align: center; padding: 30px 0 20px; }
-.header h1 { font-size: 1.4em; color: #d48080; margin-bottom: 4px; }
-.header .sub { font-size: 0.8em; color: #999; }
-
-/* 卡片 */
-.card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
-.card-title { font-size: 0.85em; color: #999; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
-
-/* 表单 */
-label { display: block; font-size: 0.85em; color: #666; margin-bottom: 4px; margin-top: 12px; }
-input, select { width: 100%; padding: 12px; border: 1.5px solid #e8e0d8; border-radius: 10px; font-size: 1em; background: #faf8f5; outline: none; transition: border .2s; }
-input:focus, select:focus { border-color: #d48080; }
-.btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1em; font-weight: 600; cursor: pointer; transition: .2s; margin-top: 16px; }
-.btn-primary { background: #d48080; color: #fff; }
-.btn-primary:active { background: #c07070; }
-.btn-outline { background: #fff; color: #d48080; border: 1.5px solid #d48080; }
-.btn-outline:active { background: #fef5f5; }
-.btn-danger { background: #fff; color: #e74c3c; border: 1.5px solid #e74c3c; margin-top: 8px; }
-.btn-danger:active { background: #fef5f5; }
-
-/* 计时大屏 */
-.timer-display { text-align: center; padding: 30px 0; }
-.timer-number { font-size: 4em; font-weight: 700; font-variant-numeric: tabular-nums; color: #333; }
-.timer-number.warning { color: #e74c3c; animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-.timer-label { font-size: 0.9em; color: #999; margin-top: 8px; }
-
-/* 手机尾号 */
-.code-badge { display: inline-block; background: #d48080; color: #fff; padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 1.2em; letter-spacing: 4px; margin: 8px 0; }
-
-/* 订单列表 */
-.order-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f0ece5; }
-.order-item:last-child { border-bottom: none; }
-.order-left { flex: 1; }
-.order-code { font-size: 0.75em; color: #999; margin-bottom: 2px; }
-.order-name { font-weight: 600; }
-.order-time { font-size: 0.85em; color: #666; margin-top: 2px; }
-.order-status { font-weight: 600; font-size: 0.9em; }
-.status-active { color: #27ae60; }
-.status-expired { color: #e74c3c; }
-.status-done { color: #999; }
-
-/* 管理员面板 */
-.admin-bar { display: flex; gap: 10px; margin-bottom: 16px; }
-.admin-bar .btn { flex: 1; margin-top: 0; font-size: 0.85em; padding: 10px; }
-
-/* 种类快捷 */
-.package-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.package-btn { padding: 14px 10px; border: 1.5px solid #e8e0d8; border-radius: 10px; background: #fff; text-align: center; cursor: pointer; transition: .2s; }
-.package-btn:active { background: #fef5f5; border-color: #d48080; }
-.package-btn .pkg-name { font-weight: 600; font-size: 0.95em; }
-.package-btn .pkg-price { color: #d48080; font-size: 0.85em; margin-top: 2px; }
-.package-btn .pkg-duration { color: #999; font-size: 0.75em; }
-
-/* 对话框 */
-.dialog-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: flex-end; }
-.dialog-overlay.show { display: flex; }
-.dialog { background: #fff; border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
-
-/* 二维码区 */
-.qr-wrap { text-align: center; padding: 10px 0; }
-.qr-wrap canvas { border-radius: 12px; }
-.qr-url { color: #999; font-size: 0.75em; margin-top: 8px; word-break: break-all; }
-
-.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 0.9em; z-index: 200; opacity: 0; transition: opacity .3s; pointer-events: none; }
-.toast.show { opacity: 1; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:#f5f0eb;min-height:100vh;color:#333}
+.page{display:none;padding:20px;max-width:500px;margin:0 auto}
+.page.active{display:block}
+.header{text-align:center;padding:30px 0 20px}
+.header h1{font-size:1.4em;color:#d48080;margin-bottom:4px}
+.header .sub{font-size:.8em;color:#999}
+.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.card-title{font-size:.85em;color:#999;margin-bottom:12px}
+input,select{width:100%;padding:12px;border:1.5px solid #e8e0d8;border-radius:10px;font-size:1em;background:#faf8f5;outline:0;margin-top:8px}
+input:focus,select:focus{border-color:#d48080}
+.btn{width:100%;padding:14px;border:0;border-radius:10px;font-size:1em;font-weight:600;cursor:pointer;margin-top:12px}
+.btn:active{opacity:.8}
+.btn-primary{background:#d48080;color:#fff}
+.btn-outline{background:#fff;color:#d48080;border:1.5px solid #d48080}
+.btn-sm{padding:8px 14px;font-size:.8em;width:auto;margin-top:4px}
+.btn-danger{color:#e74c3c;border:1.5px solid #e74c3c;background:#fff}
+.timer-display{text-align:center;padding:30px 0}
+.timer-number{font-size:4em;font-weight:700;font-variant-numeric:tabular-nums}
+.timer-number.warning{color:#e74c3c;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.timer-label{font-size:.9em;color:#999;margin-top:8px}
+.code-badge{display:inline-block;background:#d48080;color:#fff;padding:6px 16px;border-radius:20px;font-weight:700;font-size:1.2em;letter-spacing:4px;margin:8px 0}
+.order-item{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #f0ece5}
+.order-item:last-child{border-bottom:0}
+.order-left{flex:1}
+.order-code{font-size:.75em;color:#999;margin-bottom:2px}
+.order-name{font-weight:600}
+.order-time{font-size:.85em;color:#666;margin-top:2px}
+.order-status{font-weight:600;font-size:.9em}
+.status-active{color:#27ae60}
+.status-expired{color:#e74c3c}
+.status-done{color:#999}
+.admin-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.admin-bar .btn{flex:1;margin-top:0;font-size:.8em;padding:10px 6px}
+.package-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.package-btn{padding:14px 10px;border:1.5px solid #e8e0d8;border-radius:10px;background:#fff;text-align:center;cursor:pointer}
+.package-btn:active{background:#fef5f5;border-color:#d48080}
+.pkg-name{font-weight:600;font-size:.95em}
+.pkg-price{color:#d48080;font-size:.85em;margin-top:2px}
+.dialog-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:flex-end}
+.dialog-overlay.show{display:flex}
+.dialog{background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto}
+.qr-wrap{text-align:center;padding:10px 0}
+.qr-wrap img{border-radius:12px;max-width:200px}
+.qr-url{color:#999;font-size:.75em;margin-top:8px;word-break:break-all}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:20px;font-size:.9em;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.expired-tip{display:block;font-size:.9em;color:#e74c3c;margin-top:8px}
+.empty-text{font-size:1em;color:#999;padding:30px 0;text-align:center}
+.merchant-item{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #f0ece5}
+.merchant-info{flex:1}
+.merchant-phone{font-weight:600}
+.merchant-meta{font-size:.75em;color:#999;margin-top:2px}
+.merchant-actions{display:flex;gap:6px}
 </style>
 </head>
 <body>
-
 <div class="toast" id="toast"></div>
 
-<!-- ====== 顾客端：输入手机尾号看倒计时 ====== -->
-<div class="page" id="page-customer">
+<!-- ====== 顾客端 ====== -->
+<div class="page active" id="page-customer">
   <div class="header">
     <h1>🧩 拼豆计时</h1>
-    <div class="sub" id="shop-name">润达拼豆手工坊</div>
+    <div class="sub" id="customer-shop-name">加载中...</div>
   </div>
   <div class="card" id="card-code">
     <div class="card-title">请输入你的手机后4位</div>
-    <input type="text" id="input-code" placeholder="手机后4位" maxlength="4" inputmode="numeric" pattern="[0-9]*" autofocus>
-    <button class="btn btn-primary" onclick="lookupOrder()">查看计时</button>
+    <input type="tel" id="input-code" placeholder="手机后4位" maxlength="4" inputmode="numeric" autofocus>
+    <button class="btn btn-primary" onclick="customerLookup()">查看计时</button>
   </div>
   <div class="card" id="card-timer" style="display:none">
-    <div style="text-align:center;margin-bottom:12px">
-      <span class="code-badge" id="timer-code">----</span>
-    </div>
-    <div class="timer-display">
-      <div class="timer-number" id="timer-number">00:00</div>
-      <div class="timer-label" id="timer-label">剩余时间</div>
-    </div>
-    <div style="text-align:center;color:#999;font-size:0.85em" id="timer-package"></div>
-    <div class="timer-display" id="timer-expired" style="display:none">
-      <div style="font-size:1.5em;color:#e74c3c;font-weight:700">⏰ 时间到！</div>
-      <div style="color:#999;margin-top:4px">请到吧台结账或续时</div>
-    </div>
-    <button class="btn btn-outline" onclick="backToCode()">查看其他订单</button>
+    <div style="text-align:center"><span class="code-badge" id="timer-code-badge"></span></div>
+    <div class="timer-display" id="timer-display"></div>
+    <div style="text-align:center;color:#999;font-size:.85em" id="timer-info"></div>
+    <button class="btn btn-outline" onclick="customerReset()">查看其他订单</button>
+  </div>
+  <div class="card" id="card-not-found" style="display:none">
+    <div class="empty-text">😕 订单不存在或已结束</div>
+    <button class="btn btn-outline" onclick="customerReset()">重新输入</button>
   </div>
 </div>
 
-<!-- ====== 管理员登录 ====== -->
+<!-- ====== 登录页 ====== -->
 <div class="page" id="page-login">
-  <div class="header">
-    <h1>🧩 拼豆 · 管理后台</h1>
-    <div class="sub">请输入管理密码</div>
+  <div class="header"><h1>🧩 拼豆计时器</h1><div class="sub">商家管理后台</div></div>
+  <div class="card">
+    <div class="card-title">手机号 + 密码登录</div>
+    <input type="tel" id="login-phone" placeholder="手机号" maxlength="11">
+    <input type="password" id="login-pw" placeholder="密码">
+    <button class="btn btn-primary" onclick="login()">登 录</button>
+  </div>
+  <div class="card" style="text-align:center;color:#999;font-size:.8em">管理员：15720974079 / admin888<br>商家请用管理员分配的账号</div>
+</div>
+
+<!-- ====== 管理员面板 ====== -->
+<div class="page" id="page-admin">
+  <div class="header"><h1>🧩 管理后台</h1><div class="sub">管理员 · <span id="admin-name"></span></div></div>
+  <div class="admin-bar">
+    <button class="btn btn-primary" onclick="showAddMerchant()">+ 添加商家</button>
+    <button class="btn btn-outline" onclick="logout()">退出</button>
   </div>
   <div class="card">
-    <input type="password" id="input-password" placeholder="管理密码" autofocus>
-    <button class="btn btn-primary" onclick="login()">进入后台</button>
-    <div style="text-align:center;color:#999;font-size:0.8em;margin-top:12px">顾客请使用扫码链接</div>
+    <div class="card-title">商家列表</div>
+    <div id="merchant-list">加载中...</div>
   </div>
 </div>
 
-<!-- ====== 管理员端：下单+订单管理 ====== -->
-<div class="page" id="page-admin">
-  <div class="header">
-    <h1>🧩 拼豆 · 管理后台</h1>
-    <div class="sub">订单管理 & 计时下单</div>
-  </div>
-
+<!-- ====== 商家面板 ====== -->
+<div class="page" id="page-merchant">
+  <div class="header"><h1>🧩 拼豆计时</h1><div class="sub" id="merchant-shop-name"></div></div>
   <div class="admin-bar">
     <button class="btn btn-primary" onclick="showNewOrder()">+ 新订单</button>
-    <button class="btn btn-outline" id="btn-qr" onclick="showQRCode()">📱 顾客扫码</button>
+    <button class="btn btn-outline" onclick="showQRCode()">📱 顾客入口</button>
     <button class="btn btn-outline" onclick="exportCSV()">📥 导出</button>
-    <button class="btn btn-outline" onclick="logout()" style="color:#999">🔒 退出</button>
+    <button class="btn btn-outline" onclick="logout()" style="color:#999">退出</button>
   </div>
-
-  <!-- 进行中的订单 -->
-  <div class="card">
+  <div class="card" id="card-no-shop" style="display:none">
+    <div class="empty-text">还没有店铺</div>
+    <input type="text" id="shop-name-input" placeholder="输入店铺名称">
+    <button class="btn btn-primary" onclick="createShop()">创建店铺</button>
+  </div>
+  <div class="card" id="card-active-orders">
     <div class="card-title">🟢 进行中 (<span id="active-count">0</span>)</div>
     <div id="active-orders">暂无订单</div>
   </div>
-
-  <!-- 已到期/已完成的订单 -->
   <div class="card">
-    <div class="card-title">📋 最近记录</div>
+    <div class="card-title">📋 已完成</div>
     <div id="done-orders">暂无记录</div>
   </div>
 </div>
 
-<!-- ====== 新订单对话框 ====== -->
-<div class="dialog-overlay" id="dialog-order">
-  <div class="dialog">
-    <h3 style="margin-bottom:16px">新订单</h3>
-    <div class="package-grid" id="package-grid"></div>
-    <label>或自定义</label>
-    <label>手机后四位</label>
-    <input type="text" id="order-code" placeholder="输入客户手机后4位" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:6px;text-align:center;font-size:1.2em">
-    <label>人数类型</label>
-    <select id="order-type">
-      <option value="single">单人</option>
-      <option value="double">双人</option>
-    </select>
-    <label>时长（分钟）</label>
-    <input type="number" id="order-minutes" value="60" min="5" max="480" step="5">
-    <label>价格（元）</label>
-    <input type="number" id="order-price" value="14.9" min="0" step="0.1">
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeDialog('dialog-order')" style="flex:1">取消</button>
-      <button class="btn btn-primary" onclick="createOrder()" style="flex:1">确认下单</button>
-    </div>
+<!-- ====== 新订单弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-order"><div class="dialog">
+  <h3 style="margin-bottom:16px">新订单</h3>
+  <div class="package-grid" id="order-packages"></div>
+  <label>手机后4位</label>
+  <input type="tel" id="order-code" placeholder="客户手机后4位" maxlength="4" inputmode="numeric" style="letter-spacing:6px;text-align:center;font-size:1.2em">
+  <label>类型</label>
+  <select id="order-type"><option value="single">单人</option><option value="double">双人</option></select>
+  <label>时长（分钟）</label>
+  <input type="number" id="order-minutes" value="60" min="5" max="480" step="5">
+  <label>价格（元）</label>
+  <input type="number" id="order-price" value="14.9" min="0" step="0.1">
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn btn-outline" onclick="closeDlg('dlg-order')" style="flex:1">取消</button>
+    <button class="btn btn-primary" onclick="createOrder()" style="flex:1">确认下单</button>
   </div>
-</div>
+</div></div>
 
-<!-- ====== 二维码对话框 ====== -->
-<div class="dialog-overlay" id="dialog-qr">
-  <div class="dialog">
-    <h3 style="margin-bottom:8px;text-align:center">顾客扫码看计时</h3>
-    <div class="qr-wrap" id="qr-container"></div>
-    <p style="text-align:center;color:#999;font-size:0.8em;margin-top:8px">
-      将二维码打印放在吧台<br>顾客扫码后输入手机后4位即可查看倒计时
-    </p>
-    <button class="btn btn-outline" onclick="closeDialog('dialog-qr')">关闭</button>
+<!-- ====== 续时弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-extend"><div class="dialog">
+  <h3 style="margin-bottom:16px">⏱ 续时</h3>
+  <p style="color:#999;font-size:.85em;margin-bottom:12px" id="extend-info"></p>
+  <label>续时（分钟）</label>
+  <input type="number" id="extend-minutes" value="30" min="5" max="480" step="5">
+  <label>追加价格（元）</label>
+  <input type="number" id="extend-price" value="10" min="0" step="0.1">
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn btn-outline" onclick="closeDlg('dlg-extend')" style="flex:1">取消</button>
+    <button class="btn btn-primary" onclick="doExtend()" style="flex:1">确认续时</button>
   </div>
-</div>
+</div></div>
 
-<!-- ====== 续时对话框 ====== -->
-<div class="dialog-overlay" id="dialog-extend">
-  <div class="dialog">
-    <h3 style="margin-bottom:16px">⏱ 续时</h3>
-    <p style="color:#999;font-size:0.85em;margin-bottom:16px" id="extend-info">订单：</p>
-    <label>续时套餐</label>
-    <div class="package-grid" id="extend-package-grid"></div>
-    <label>或自定义时长（分钟）</label>
-    <input type="number" id="extend-minutes" value="30" min="5" max="480" step="5">
-    <label>追加价格（元）</label>
-    <input type="number" id="extend-price" value="10" min="0" step="0.1">
-    <div style="display:flex;gap:10px;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeDialog('dialog-extend')" style="flex:1">取消</button>
-      <button class="btn btn-primary" onclick="doExtend()" style="flex:1">确认续时</button>
-    </div>
+<!-- ====== 顾客入口弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-qr"><div class="dialog">
+  <h3 style="text-align:center;margin-bottom:8px">📱 顾客入口</h3>
+  <div class="qr-wrap" id="qr-content"></div>
+  <button class="btn btn-outline" onclick="closeDlg('dlg-qr')">关闭</button>
+</div></div>
+
+<!-- ====== 添加商家弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-merchant"><div class="dialog">
+  <h3 style="margin-bottom:16px">添加商家</h3>
+  <input type="tel" id="new-merchant-phone" placeholder="手机号" maxlength="11">
+  <input type="text" id="new-merchant-name" placeholder="商家名称（选填）">
+  <input type="password" id="new-merchant-pw" placeholder="设置密码">
+  <label style="font-size:.85em;color:#999;margin-top:8px;display:block">到期天数（默认365天）</label>
+  <input type="number" id="new-merchant-days" value="365" min="1">
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn btn-outline" onclick="closeDlg('dlg-merchant')" style="flex:1">取消</button>
+    <button class="btn btn-primary" onclick="doAddMerchant()" style="flex:1">确认添加</button>
   </div>
-</div>
+</div></div>
+
+<!-- ====== 续费弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-renew"><div class="dialog">
+  <h3 style="margin-bottom:16px">续费</h3>
+  <p style="color:#999;font-size:.85em;margin-bottom:12px" id="renew-info"></p>
+  <label>选择天数</label>
+  <div class="package-grid" style="margin-bottom:12px">
+    <div class="package-btn" onclick="pickRenew(7)"><div class="pkg-name">7天</div></div>
+    <div class="package-btn" onclick="pickRenew(15)"><div class="pkg-name">15天</div></div>
+    <div class="package-btn" onclick="pickRenew(30)"><div class="pkg-name">30天</div></div>
+    <div class="package-btn" onclick="pickRenew(90)"><div class="pkg-name">90天</div></div>
+    <div class="package-btn" onclick="pickRenew(180)"><div class="pkg-name">180天</div></div>
+    <div class="package-btn" onclick="pickRenew(365)"><div class="pkg-name">365天</div></div>
+  </div>
+  <label>自定义天数</label>
+  <input type="number" id="renew-days" value="30" min="1">
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn btn-outline" onclick="closeDlg('dlg-renew')" style="flex:1">取消</button>
+    <button class="btn btn-primary" onclick="doRenew()" style="flex:1">确认续费</button>
+  </div>
+</div></div>
 
 <script>
-// ==================== 数据层 ====================
-const API_BASE = '/api';
-const state = {
-  orders: [],
-  currentCode: null,
-  timerInterval: null,
-};
+const $=id=>document.getElementById(id);
+const API='/api';
+let token='',userRole='',userPhone='',currentShopId='',currentShopName='';
 
-async function loadOrders() {
-  try {
-    const res = await fetch(`${API_BASE}/orders`);
-    state.orders = res.ok ? await res.json() : [];
-  } catch { state.orders = []; }
+// ====== 工具 ======
+function toast(msg){const e=$('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2000)}
+function closeDlg(id){$(id).classList.remove('show')}
+async function api(method,path,body){
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if(token) opts.headers.Authorization='Bearer '+token;
+  if(body) opts.body=JSON.stringify(body);
+  try{const r=await fetch(API+path,opts);return r.ok?await r.json():null}catch{return null}
 }
 
-async function createOrderAPI(orderData) {
-  try {
-    const res = await fetch(`${API_BASE}/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData),
-    });
-    return res.ok ? await res.json() : null;
-  } catch { return null; }
+// ====== 常量 ======
+const PKG=[{name:'单人 1小时',price:14.9,minutes:60,type:'single'},{name:'双人 1小时',price:25,minutes:60,type:'double'},{name:'单人 不限时',price:39.9,minutes:0,type:'single'},{name:'双人 不限时',price:69.9,minutes:0,type:'double'}];
+
+// ====== 登录 ======
+async function login(){
+  const phone=$('login-phone').value.trim(),pw=$('login-pw').value.trim();
+  if(!phone||!pw) return toast('请输入手机号和密码');
+  const r=await api('POST','/login',{phone,password:pw});
+  if(!r||!r.ok) return toast(r?r.error:'登录失败');
+  token=r.token;userRole=r.role;userPhone=r.phone;
+  sessionStorage.setItem('pin_token',token);
+  sessionStorage.setItem('pin_role',userRole);
+  sessionStorage.setItem('pin_phone',userPhone);
+  if(userRole==='admin') showAdmin();
+  else showMerchant();
+  document.getElementById('admin-name').textContent=r.name||userPhone;
 }
 
-async function completeOrderAPI(code) {
-  try {
-    await fetch(`${API_BASE}/orders/complete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
-  } catch {}
+function logout(){token='';userRole='';userPhone='';sessionStorage.clear();route()}
+
+// ====== 路由 ======
+function route(){
+  token=sessionStorage.getItem('pin_token')||'';
+  userRole=sessionStorage.getItem('pin_role')||'';
+  userPhone=sessionStorage.getItem('pin_phone')||'';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const p=new URLSearchParams(location.search);
+  const shopId=p.get('shopId')||p.get('t')||p.get('id');
+
+  if(shopId){ // 顾客模式
+    currentShopId=shopId;$('page-customer').classList.add('active');initCustomer();
+  }else if(userRole==='admin'){showAdmin();
+  }else if(userRole==='merchant'){showMerchant();
+  }else{$('page-login').classList.add('active')}
 }
 
-async function removeOrderAPI(code) {
-  try {
-    await fetch(`${API_BASE}/orders/remove`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
-  } catch {}
+// ====== 管理员 ======
+async function showAdmin(){
+  $('page-admin').classList.add('active');
+  $('admin-name').textContent=userPhone;
+  await loadMerchants();
 }
-
-// ==================== 种类 ====================
-const PACKAGES = [
-  { name: '单人 1小时', price: 14.9, minutes: 60, type: 'single' },
-  { name: '双人 1小时', price: 25, minutes: 60, type: 'double' },
-  { name: '单人 不限时', price: 39.9, minutes: 0, type: 'single' },
-  { name: '双人 不限时', price: 69.9, minutes: 0, type: 'double' },
-];
-
-// ==================== UI ====================
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2000);
-}
-
-function closeDialog(id) {
-  document.getElementById(id).classList.remove('show');
-}
-
-// ==================== 管理员 ====================
-function initAdmin() {
-  loadOrders();
-  renderOrders();
-  renderPackageGrid();
-}
-
-function renderPackageGrid() {
-  const grid = document.getElementById('package-grid');
-  grid.innerHTML = PACKAGES.map(p => `
-    <div class="package-btn" onclick="quickOrder(${p.minutes},${p.price},'${p.type}','${p.name.replace(/'/g,"\\'")}')">
-      <div class="pkg-name">${p.name}</div>
-      <div class="pkg-price">¥${p.price}</div>
-      <div class="pkg-duration">${p.minutes > 0 ? p.minutes+'分钟' : '不限时'}</div>
-    </div>
-  `).join('');
-}
-
-function quickOrder(minutes, price, type, name) {
-  document.getElementById('order-minutes').value = minutes || 60;
-  document.getElementById('order-price').value = price;
-  document.getElementById('order-type').value = type;
-  // 不清空已有手机号，让店员先输入也可以
-  document.getElementById('dialog-order').classList.add('show');
-  document.getElementById('order-code').focus();
-}
-
-function showNewOrder() {
-  document.getElementById('dialog-order').classList.add('show');
-}
-
-function createOrder() {
-  const customCode = document.getElementById('order-code').value.trim();
-  if (!customCode || customCode.length !== 4 || !/^\d{4}$/.test(customCode)) {
-    toast('请输入客户手机后4位数字');
-    return;
-  }
-  const minutes = parseInt(document.getElementById('order-minutes').value) || 60;
-  const price = parseFloat(document.getElementById('order-price').value) || 0;
-  const type = document.getElementById('order-type').value;
-  doCreateOrder(minutes, price, type, customCode);
-  closeDialog('dialog-order');
-}
-
-async function doCreateOrder(minutes, price, type, customCode) {
-  const order = await createOrderAPI({ minutes, price, type, code: customCode });
-  if (!order) {
-    toast('创建失败，请稍后重试');
-    return;
-  }
-  await loadOrders();
-  renderOrders();
-  toast(`✅ 下单成功 手机尾号：${order.code}`);
-
-  // 语音播报手机尾号
-  try {
-    const u = new SpeechSynthesisUtterance(`手机尾号 ${order.code.split('').join(' ')}`);
-    u.lang = 'zh-CN';
-    u.rate = 0.7;
-    u.pitch = 1.1;
-    u.volume = 1;
-    // 优先女声中文语音
-    const voices = speechSynthesis.getVoices();
-    const zhVoice = voices.find(v => v.lang.startsWith('zh-CN') && (v.name.includes('Tingting') || v.name.includes('Meijia') || v.name.includes('Yaoyao') || v.name.includes('Huihui') || v.name.includes('Google'))) ||
-                     voices.find(v => v.lang.startsWith('zh-CN')) ||
-                     voices.find(v => v.lang === 'zh-CN');
-    if (zhVoice) u.voice = zhVoice;
-    speechSynthesis.speak(u);
-  } catch {}
-}
-
-async function completeOrder(code) {
-  if (!confirm(`确定要完成手机尾号 ${code} 吗？`)) return;
-  // 先本地刷新 UI（乐观更新）
-  const order = state.orders.find(o => o.code === code);
-  if (order) order.status = 'completed';
-  renderOrders();
-  toast('已标记完成');
-  // 异步提交 API
-  await completeOrderAPI(code);
-}
-
-async function doneAllExpired() {
-  let count = 0;
-  const now = Date.now();
-  for (const o of state.orders) {
-    if (o.status === 'active' && o.minutes > 0 && o.startTime + o.minutes * 60 * 1000 <= now) {
-      await completeOrderAPI(o.code);
-      count++;
-    }
-  }
-  await loadOrders();
-  renderOrders();
-  if (count > 0) {
-    toast(`已标记 ${count} 个到期订单`);
-  } else {
-    toast('没有到期的订单');
-  }
-}
-
-async function clearRecords() {
-  const done = state.orders.filter(o => o.status === 'completed');
-  for (const o of done) {
-    await removeOrderAPI(o.code);
-  }
-  await loadOrders();
-  renderOrders();
-  toast('已清除完成记录');
-}
-
-async function extendOrderAPI(code, minutes, price) {
-  try {
-    const res = await fetch(`${API_BASE}/orders/extend`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, minutes, price }),
-    });
-    return res.ok ? await res.json() : null;
-  } catch { return null; }
-}
-
-// ==================== 续时 ====================
-let extendCode = null;
-
-function showExtend(code) {
-  extendCode = code;
-  const order = state.orders.find(o => o.code === code);
-  if (!order) return;
-  document.getElementById('extend-info').textContent = `当前：手机尾号 ${code} · ${order.minutes}分钟 · ¥${order.price}`;
-  // 填充续时套餐
-  const grid = document.getElementById('extend-package-grid');
-  grid.innerHTML = [
-    { name: '加30分钟', minutes: 30, price: 10 },
-    { name: '加1小时', minutes: 60, price: 15 },
-    { name: '升不限时', minutes: -1, price: 0 },
-  ].map(p => {
-    const label = p.minutes === -1 ? '升不限时' : `加${p.minutes}分钟`;
-    return `<div class="package-btn" onclick="pickExtend(${p.minutes},${p.price},'${label}')">
-      <div class="pkg-name">${label}</div>
-      <div class="pkg-price">${p.minutes === -1 ? `补差价 ¥${Math.max(0, 39.9 - order.price).toFixed(1)}` : '¥'+p.price}</div>
-    </div>`;
+async function loadMerchants(){
+  const r=await api('GET','/merchants');
+  if(!r||!r.ok) return ($('merchant-list').innerHTML='<div class="empty-text">加载失败</div>');
+  const ms=r.merchants;
+  if(!ms.length) return ($('merchant-list').innerHTML='<div class="empty-text">暂无商家</div>');
+  $('merchant-list').innerHTML=ms.map(m=>{
+    const exp=m.expireTime?new Date(m.expireTime).toLocaleDateString('zh-CN'):'无';
+    const st=m.status==='expired'?'🔴 已到期':m.status==='disabled'?'⚫ 已禁用':'🟢 正常';
+    return `<div class="merchant-item">
+      <div class="merchant-info"><div class="merchant-phone">${m.phone}${m.name?' · '+m.name:''}</div><div class="merchant-meta">${st} · 到期:${exp} · 角色:${m.role}</div></div>
+      <div class="merchant-actions">
+        <button class="btn btn-sm btn-outline" onclick="showRenew('${m.phone}')">续费</button>
+        <button class="btn btn-sm btn-danger" onclick="disableMerchant('${m.phone}')">禁用</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteMerchant('${m.phone}')">删除</button>
+      </div></div>`;
   }).join('');
-  // 重置自定义输入
-  document.getElementById('extend-minutes').value = 30;
-  document.getElementById('extend-price').value = 10;
-  document.getElementById('dialog-extend').classList.add('show');
+}
+function showAddMerchant(){$('dlg-merchant').classList.add('show')}
+async function doAddMerchant(){
+  const phone=$('new-merchant-phone').value.trim(),name=$('new-merchant-name').value.trim(),pw=$('new-merchant-pw').value.trim(),days=parseInt($('new-merchant-days').value)||365;
+  if(!phone||!pw) return toast('请填写手机号和密码');
+  const r=await api('POST','/merchants',{phone,name,password:pw,days,action:'add'});
+  if(!r||!r.ok) return toast(r?r.error:'添加失败');
+  toast('✅ 添加成功');closeDlg('dlg-merchant');loadMerchants();
+}
+let renewPhone='';
+function showRenew(phone){renewPhone=phone;$('renew-info').textContent='商家: '+phone;$('dlg-renew').classList.add('show');$('renew-days').value=30}
+function pickRenew(d){$('renew-days').value=d}
+async function doRenew(){
+  const days=parseInt($('renew-days').value)||30;
+  const r=await api('POST','/merchants',{phone:renewPhone,days,action:'renew'});
+  if(!r||!r.ok) return toast(r?r.error:'续费失败');
+  toast('✅ 续费成功');closeDlg('dlg-renew');loadMerchants();
+}
+async function disableMerchant(phone){
+  if(!confirm('确定禁用 '+phone+'？')) return;
+  await api('POST','/merchants',{phone,action:'disable'});loadMerchants();
+}
+async function deleteMerchant(phone){
+  if(!confirm('确定删除 '+phone+'？此操作不可恢复！')) return;
+  if(!confirm('再次确认删除？')) return;
+  await api('POST','/merchants',{phone,action:'delete'});loadMerchants();
 }
 
-function pickExtend(minutes, price) {
-  if (minutes === -1) {
-    // 升不限时
-    const order = state.orders.find(o => o.code === extendCode);
-    const diff = Math.max(0, 39.9 - (order ? order.price : 0));
-    document.getElementById('extend-minutes').value = 0;
-    document.getElementById('extend-price').value = diff.toFixed(1);
-  } else {
-    document.getElementById('extend-minutes').value = minutes;
-    document.getElementById('extend-price').value = price;
+// ====== 商家 ======
+async function showMerchant(){
+  $('page-merchant').classList.add('active');
+  const r=await api('GET','/shops');
+  if(!r||!r.ok) return toast('加载店铺失败');
+  const shops=r.shops.filter(s=>s.status==='active');
+  if(!shops.length){
+    $('card-no-shop').style.display='block';$('card-active-orders').style.display='none';
+  }else{
+    $('card-no-shop').style.display='none';$('card-active-orders').style.display='block';
+    currentShopId=shops[0].id;currentShopName=shops[0].name;
+    $('merchant-shop-name').textContent=currentShopName;
+    sessionStorage.setItem('shopId',currentShopId);sessionStorage.setItem('shopName',currentShopName);
+    renderOrders();renderPackages();
   }
 }
+async function createShop(){
+  const name=$('shop-name-input').value.trim()||'拼豆手工坊';
+  const r=await api('POST','/shops',{name});
+  if(!r||!r.ok) return toast(r?r.error:'创建失败');
+  toast('✅ 店铺创建成功');showMerchant();
+}
+function renderPackages(){
+  $('order-packages').innerHTML=PKG.map(p=>`<div class="package-btn" onclick="pickPkg(${p.minutes},${p.price},'${p.type}')"><div class="pkg-name">${p.name}</div><div class="pkg-price">¥${p.price}</div></div>`).join('');
+}
+function pickPkg(m,p,t){$('order-minutes').value=m;$('order-price').value=p;$('order-type').value=t}
+function showNewOrder(){if(!currentShopId) return toast('请先创建店铺');$('dlg-order').classList.add('show')}
 
-async function doExtend() {
-  if (!extendCode) return;
-  const order = state.orders.find(o => o.code === extendCode);
-  const minutes = parseInt(document.getElementById('extend-minutes').value) || 30;
-  const price = parseFloat(document.getElementById('extend-price').value) || 0;
-  if (minutes === 0) {
-    // 升不限时：设 minutes = 0
-    if (!confirm(`确定将手机尾号 ${extendCode} 升级为不限时？\n补差价 ¥${price.toFixed(1)}`)) return;
-  } else {
-    if (!confirm(`确定续时 ${minutes} 分钟，追加 ¥${price}？`)) return;
-  }
-  const result = await extendOrderAPI(extendCode, minutes, price);
-  if (result) {
-    // 乐观更新本地数据
-    if (order) {
-      if (minutes === 0) {
-        order.minutes = 0; // 升不限时
-      } else {
-        order.minutes += minutes;
-      }
-      order.price += price;
-    }
-    renderOrders();
-    toast(`✅ 已续时 · 手机尾号：${extendCode}`);
-  } else {
-    toast('续时失败，请稍后重试');
-  }
-  closeDialog('dialog-extend');
-  extendCode = null;
+async function createOrder(){
+  const code=$('order-code').value.trim();
+  if(!/^\d{4}$/.test(code)) return toast('请输入4位手机尾号');
+  const m=parseInt($('order-minutes').value)||60,p=parseFloat($('order-price').value)||0,t=$('order-type').value;
+  const r=await api('POST','/orders',{shopId:currentShopId,code,minutes:m,price:p,type:t});
+  if(!r||!r.ok) return toast(r?r.error:'下单失败');
+  toast('✅ 下单成功 · '+code);closeDlg('dlg-order');renderOrders();
 }
 
-async function deleteOrder(code) {
-  if (!confirm(`确定要删除手机尾号 ${code} 吗？\n删除后不可恢复。`)) return;
-  if (!confirm(`再次确认：删除手机尾号 ${code}？`)) return;
-  // 先本地刷新 UI（乐观更新）
-  state.orders = state.orders.filter(o => o.code !== code);
-  renderOrders();
-  toast(`已删除手机尾号：${code}`);
-  // 异步提交 API
-  await removeOrderAPI(code);
+async function renderOrders(){
+  const r=await api('GET','/orders?shopId='+currentShopId);
+  const orders=r&&r.ok?r.orders:[];
+  const active=orders.filter(o=>o.status==='active'),done=orders.filter(o=>o.status!=='active');
+  $('active-count').textContent=active.length;
+  $('active-orders').innerHTML=active.length?active.map(o=>renderOrderItem(o,true)).join(''):'<div class="empty-text">暂无进行中的订单</div>';
+  $('done-orders').innerHTML=done.length?done.slice(0,20).map(o=>renderOrderItem(o,false)).join(''):'<div class="empty-text">暂无记录</div>';
+}
+function renderOrderItem(o,isActive){
+  const endAt=o.minutes>0?o.startTime+o.minutes*60000:null;
+  const remain=endAt?Math.max(0,Math.ceil((endAt-Date.now())/1000)):null;
+  const rs=remain===null?'不限时♾️':remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0');
+  const expired=endAt&&Date.now()>=endAt;
+  return `<div class="order-item"><div class="order-left">
+    <div class="order-code">${o.code}</div>
+    <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
+    <div class="order-time">${rs}</div></div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+    ${isActive?`<span class="order-status ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
+    <button class="btn btn-sm btn-danger" onclick="completeOrder('${o.code}')">完成</button>
+    ${o.minutes>0?`<button class="btn btn-sm btn-primary" onclick="showExtend('${o.code}')">续时</button>`:''}`:'<span class="order-status status-done">✅完成</span>'}
+    </div></div>`;
 }
 
-async function renderOrders() {
-  await loadOrders();
-  const active = state.orders.filter(o => o.status === 'active');
-  const done = state.orders.filter(o => o.status === 'completed');
-
-  document.getElementById('active-count').textContent = active.length;
-
-  const activeEl = document.getElementById('active-orders');
-  if (active.length === 0) {
-    activeEl.innerHTML = '<div style="color:#999;text-align:center;padding:20px">暂无进行中的订单</div>';
-  } else {
-    activeEl.innerHTML = active.map(o => {
-      const endAt = o.minutes > 0 ? o.startTime + o.minutes * 60 * 1000 : null;
-      const remain = endAt ? Math.max(0, Math.ceil((endAt - Date.now()) / 1000)) : null;
-      const remainStr = endAt === null ? '不限时♾️' : formatRemain(remain);
-      const expired = endAt && Date.now() >= endAt;
-      return `
-        <div class="order-item">
-          <div class="order-left">
-            <div class="order-code">手机尾号：${o.code}</div>
-            <div class="order-name">${o.type === 'double' ? '👥 双人' : '👤 单人'} · ¥${o.price}</div>
-            <div class="order-time">${remainStr} · ${o.minutes > 0 ? o.minutes+'分钟' : '不限时'}</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-            <span class="order-status ${expired ? 'status-expired' : 'status-active'}">${expired ? '⚠️ 已到期' : remainStr}</span>
-            <button class="btn btn-danger" style="font-size:0.75em;padding:4px 10px;margin:0" onclick="completeOrder('${o.code}')">完成</button>
-            ${o.minutes > 0 ? `<button style="font-size:0.70em;padding:4px 10px;margin:0;background:#d48080;color:#fff;border:none;border-radius:10px;cursor:pointer" onclick="showExtend('${o.code}')">续时</button>` : ''}
-            <button class="btn btn-danger" style="font-size:0.70em;padding:4px 10px;margin:0;background:#fff;color:#999;border:1px solid #ddd" onclick="deleteOrder('${o.code}')">删除</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  const doneEl = document.getElementById('done-orders');
-  if (done.length === 0) {
-    doneEl.innerHTML = '<div style="color:#ccc;text-align:center;padding:20px">暂无记录</div>';
-  } else {
-    doneEl.innerHTML = done.slice(0, 20).map(o => `
-      <div class="order-item">
-        <div class="order-left">
-          <div class="order-code">手机尾号：${o.code}</div>
-          <div class="order-name">${o.type === 'double' ? '👥 双人' : '👤 单人'} · ¥${o.price}</div>
-          <div class="order-time">${o.minutes > 0 ? o.minutes+'分钟' : '不限时'}</div>
-        </div>
-        <span class="order-status status-done">✅ 完成</span>
-      </div>
-    `).join('');
-  }
+async function completeOrder(code){
+  if(!confirm('确定完成手机尾号 '+code+'？')) return;
+  await api('POST','/orders/complete',{shopId:currentShopId,code});renderOrders();
+}
+let extendCode='';
+function showExtend(code){extendCode=code;$('extend-info').textContent='手机尾号: '+code;$('dlg-extend').classList.add('show')}
+async function doExtend(){
+  const m=parseInt($('extend-minutes').value)||30,p=parseFloat($('extend-price').value)||0;
+  if(!confirm(`续时 ${m} 分钟，¥${p}？`)) return;
+  const r=await api('POST','/orders/extend',{shopId:currentShopId,code:extendCode,minutes:m,price:p});
+  if(!r||!r.ok) return toast(r?r.error:'续时失败');
+  toast('✅ 续时成功');closeDlg('dlg-extend');renderOrders();
+}
+function showQRCode(){
+  $('dlg-qr').classList.add('show');
+  const url=location.origin+location.pathname+'?shopId='+currentShopId;
+  const qrImg=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=212-128-128&data=${encodeURIComponent(url)}`;
+  $('qr-content').innerHTML=`<img src="${qrImg}" alt="二维码" onerror="this.onerror=null;this.nextSibling.style.display='block';this.style.display='none'"><div style="display:none;font-family:monospace;font-size:.7em;color:#999;word-break:break-all;margin-top:8px">${url}</div><p style="margin-top:8px;color:#d48080;font-weight:600">📱 顾客扫码输入手机后4位查看计时</p>`;
+}
+async function exportCSV(){
+  const r=await api('GET','/orders?shopId='+currentShopId);
+  if(!r||!r.ok||!r.orders.length) return toast('暂无数据');
+  let csv='\uFEFF订单号,类型,价格,时长,状态,时间\n';
+  r.orders.forEach(o=>{csv+=`${o.code},${o.type==='double'?'双人':'单人'},${o.price},${o.minutes||'不限时'},${o.status==='active'?'进行中':'已完成'},${new Date(o.startTime).toLocaleString('zh-CN')}\n`});
+  const b=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='拼豆订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  toast('✅ 已导出');
 }
 
-function formatRemain(seconds) {
-  if (seconds === null) return '不限时';
-  if (seconds <= 0) return '已到期';
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+// ====== 顾客端 ======
+let customerTimer=null,customerOrder=null;
+async function initCustomer(){
+  try{const r=await api('GET','/shops/'+currentShopId);if(r&&r.ok)$('customer-shop-name').textContent=r.shop.name}catch(e){}
 }
-
-// ==================== 顾客端 ====================
-function initCustomer() {
-  // 检查URL参数 - 是否带着code进来
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (code) {
-    document.getElementById('input-code').value = code;
-    lookupOrder();
+async function customerLookup(){
+  const code=$('input-code').value.trim();
+  if(!/^\d{4}$/.test(code)) return toast('请输入4位手机尾号');
+  const r=await api('GET','/orders/lookup?shopId='+currentShopId+'&code='+code);
+  if(!r||!r.ok) return ($('card-code').style.display='none',$('card-timer').style.display='none',$('card-not-found').style.display='block');
+  customerOrder=r.order;$('card-code').style.display='none';$('card-not-found').style.display='none';$('card-timer').style.display='block';
+  $('timer-code-badge').textContent=code;
+  $('timer-info').textContent=(customerOrder.type==='double'?'双人':'单人')+' · ¥'+customerOrder.price+' · '+(customerOrder.minutes>0?customerOrder.minutes+'分钟':'不限时');
+  if(customerTimer)clearInterval(customerTimer);
+  if(customerOrder.minutes===0){
+    $('timer-display').innerHTML='<div class="timer-number" style="font-size:3em">♾️</div><div class="timer-label">不限时畅玩</div>';
+    customerTimer=setInterval(checkCustomerStatus,5000);
+  }else{
+    updateCustomerTimer();customerTimer=setInterval(updateCustomerTimer,1000);
   }
 }
-
-async function lookupOrder() {
-  const code = document.getElementById('input-code').value.trim();
-  if (code.length < 4) {
-    toast('请输入手机后4位');
-    return;
+function updateCustomerTimer(){
+  if(!customerOrder||customerOrder.minutes===0)return;
+  const end=customerOrder.startTime+customerOrder.minutes*60000,remain=Math.max(0,Math.ceil((end-Date.now())/1000));
+  if(remain<=0){
+    $('timer-display').innerHTML='<div class="timer-number warning">00:00</div><div class="timer-label">⏰ 时间到！</div><div class="expired-tip">请到吧台结账或续时</div>';
+  }else{
+    const m=Math.floor(remain/60),s=remain%60,w=remain<=300?' warning':'';
+    $('timer-display').innerHTML=`<div class="timer-number${w}">${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div><div class="timer-label">剩余时间</div>`;
   }
-  await loadOrders();
-  const order = state.orders.find(o => o.code === code && o.status === 'active');
-  if (!order) {
-    toast('订单不存在或已结束');
-    return;
-  }
-  state.currentCode = code;
-  showTimer(order);
+  if(Math.floor(Date.now()/1000)%5===0) checkCustomerStatus();
 }
-
-function showTimer(order) {
-  document.getElementById('card-code').style.display = 'none';
-  document.getElementById('card-timer').style.display = 'block';
-  document.getElementById('timer-code').textContent = order.code;
-  document.getElementById('timer-package').textContent = `${order.type === 'double' ? '双人' : '单人'} · ¥${order.price}${order.minutes > 0 ? ' · ' + order.minutes + '分钟' : ' · 不限时'}`;
-
-  if (order.minutes === 0) {
-    // 不限时：不启动定时器，只定期检查订单是否被删除
-    document.getElementById('timer-number').textContent = '♾️';
-    document.getElementById('timer-label').textContent = '不限时畅玩';
-    document.getElementById('timer-number').classList.remove('warning');
-    document.getElementById('timer-expired').style.display = 'none';
-    if (state.timerInterval) clearInterval(state.timerInterval);
-    state.timerInterval = setInterval(async () => {
-      await loadOrders();
-      const o = state.orders.find(o => o.code === state.currentCode);
-      if (!o || o.status !== 'active') {
-        clearInterval(state.timerInterval);
-        backToCode();
-      }
-    }, 1000);
-  } else {
-    updateTimerDisplay(order);
-    // 限时订单：每秒刷新倒计时
-    if (state.timerInterval) clearInterval(state.timerInterval);
-    state.timerInterval = setInterval(async () => {
-      await loadOrders();
-      const o = state.orders.find(o => o.code === state.currentCode);
-      if (!o || o.status !== 'active') {
-        clearInterval(state.timerInterval);
-        document.getElementById('timer-number').textContent = '--:--';
-        document.getElementById('timer-label').textContent = '订单已结束';
-        backToCode();
-        return;
-      }
-      updateTimerDisplay(o);
-    }, 1000);
-  }
+async function checkCustomerStatus(){
+  const r=await api('GET','/orders/lookup?shopId='+currentShopId+'&code='+(customerOrder?customerOrder.code:''));
+  if(!r||!r.ok){if(customerTimer)clearInterval(customerTimer);customerReset()}
 }
+function customerReset(){$('card-code').style.display='block';$('card-timer').style.display='none';$('card-not-found').style.display='none';if(customerTimer)clearInterval(customerTimer);$('input-code').value='';customerOrder=null;$('input-code').focus()}
 
-function updateTimerDisplay(order) {
-  // 不限时
-  if (order.minutes === 0) {
-    document.getElementById('timer-number').textContent = '♾️';
-    document.getElementById('timer-label').textContent = '不限时畅玩';
-    document.getElementById('timer-number').classList.remove('warning');
-    document.getElementById('timer-expired').style.display = 'none';
-    return;
-  }
-  const endAt = order.startTime + order.minutes * 60 * 1000;
-  const remain = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-  const el = document.getElementById('timer-number');
-  const label = document.getElementById('timer-label');
-  const expiredEl = document.getElementById('timer-expired');
+// ====== 自动刷新 ======
+let refreshBusy=false;
+setInterval(async()=>{if(refreshBusy||!currentShopId||!$('page-merchant').classList.contains('active'))return;refreshBusy=true;await renderOrders();refreshBusy=false},3000);
 
-  if (remain <= 0) {
-    el.textContent = '00:00';
-    el.classList.add('warning');
-    label.textContent = '时间到！';
-    expiredEl.style.display = 'block';
-  } else {
-    const m = Math.floor(remain / 60);
-    const s = remain % 60;
-    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    label.textContent = '剩余时间';
-    expiredEl.style.display = 'none';
-    if (remain <= 300) {
-      el.classList.add('warning');
-    } else {
-      el.classList.remove('warning');
-    }
-  }
-}
-
-function backToCode() {
-  document.getElementById('card-code').style.display = 'block';
-  document.getElementById('card-timer').style.display = 'none';
-  state.currentCode = null;
-  if (state.timerInterval) {
-    clearInterval(state.timerInterval);
-    state.timerInterval = null;
-  }
-  document.getElementById('input-code').value = '';
-  document.getElementById('input-code').focus();
-}
-
-// ==================== 二维码 ====================
-function showQRCode() {
-  document.getElementById('dialog-qr').classList.add('show');
-  // 延迟生成，等dialog渲染
-  setTimeout(() => {
-    const container = document.getElementById('qr-container');
-    const baseUrl = window.location.origin + window.location.pathname;
-    const url = baseUrl + '?mode=customer';
-    container.innerHTML = '';
-    // 用简单的canvas画二维码替代 - 实际用文本URL代替
-    const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 200;
-    const ctx = canvas.getContext('2d');
-
-    // 简单绘制一个模拟二维码（实际生产用qrcode库）
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0,0,200,200);
-    ctx.fillStyle = '#000';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    const lines = url.match(/.{1,30}/g) || [url];
-    lines.forEach((line, i) => {
-      ctx.fillText(line, 100, 30 + i * 14);
-    });
-
-    // 生成真正的二维码图片 + 可复制链接
-    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-    container.innerHTML = `
-      <div style="text-align:center;padding:20px;background:#fff;border-radius:12px">
-        <img src="${qrSrc}" width="200" height="200" alt="顾客链接二维码" style="display:block;margin:0 auto 12px;border-radius:8px" onerror="this.onerror=null;this.nextSibling.style.display='block';this.style.display='none'" />
-        <div style="display:none;font-family:monospace;font-size:0.75em;color:#999;word-break:break-all;margin-bottom:12px">${url}</div>
-        <div style="font-weight:600;color:#d48080;margin-bottom:4px">📱 顾客微信扫码即可查看倒计时</div>
-        <p style="font-size:0.8em;color:#999;margin-top:8px">也可打印二维码立牌放在吧台<br>顾客扫码后输入手机后4位查看剩余时间</p>
-      </div>
-    `;
-  }, 100);
-}
-
-// ==================== 路由 ====================
-// ==================== 登录 ====================
-// 密码 SHA-256 哈希（前端不可逆）
-const ADMIN_PASSWORDS = [
-  '7ce59530d2679fedc92e6c129958738bff3ded44b974e2687c50a19af4a2bee9',
-  '9bf341bda1951dd21652c2d0dbafbcc9e54845326ed1aefa5c6bd3d5b43a5ad9',
-];
-
-async function sha256(text) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function login() {
-  const pw = document.getElementById('input-password').value.trim();
-  const hash = await sha256(pw);
-  if (ADMIN_PASSWORDS.includes(hash)) {
-    sessionStorage.setItem('admin_logged_in', '1');
-    route();
-  } else {
-    toast('密码错误');
-  }
-}
-
-function logout() {
-  sessionStorage.removeItem('admin_logged_in');
-  route();
-}
-
-function route() {
-  const params = new URLSearchParams(window.location.search);
-  const mode = params.get('mode');
-  const code = params.get('code');
-
-  // 隐藏所有页面
-  ['page-customer','page-admin','page-login'].forEach(id => {
-    document.getElementById(id).classList.remove('active');
-  });
-
-  if (mode === 'customer' || code) {
-    // 顾客模式
-    document.getElementById('page-customer').classList.add('active');
-    document.getElementById('shop-name').textContent = '润达拼豆手工坊';
-    initCustomer();
-  } else if (sessionStorage.getItem('admin_logged_in') === '1') {
-    // 管理员已登录
-    document.getElementById('page-admin').classList.add('active');
-    initAdmin();
-  } else {
-    // 未登录 → 显示密码页
-    document.getElementById('page-login').classList.add('active');
-  }
-}
-
-// ==================== 定期刷新管理面板 ====================
-let adminRefreshBusy = false;
-setInterval(async () => {
-  if (adminRefreshBusy) return;
-  adminRefreshBusy = true;
-  try {
-    if (document.getElementById('page-admin').classList.contains('active')) {
-      await loadOrders();
-      renderOrders();
-    }
-  } finally {
-    adminRefreshBusy = false;
-  }
-}, 1000);
-
-// ==================== 导出 ====================
-async function exportCSV() {
-  await loadOrders();
-  if (state.orders.length === 0) {
-    toast('暂无数据可导出');
-    return;
-  }
-  // CSV 表头
-  let csv = '订单号,类型,价格,时长(分钟),状态,开始时间,结束时间\n';
-  state.orders.forEach(o => {
-    const start = new Date(o.startTime).toLocaleString('zh-CN');
-    const end = o.endTime ? new Date(o.endTime).toLocaleString('zh-CN') : '';
-    const type = o.type === 'double' ? '双人' : '单人';
-    const status = o.status === 'active' ? '进行中' : '已完成';
-    csv += `${o.code},${type},${o.price},${o.minutes > 0 ? o.minutes : '不限时'},${status},${start},${end}\n`;
-  });
-  // BOM 头解决 Excel 中文乱码
-  const bom = '\uFEFF';
-  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const now = new Date();
-  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  a.download = `拼豆订单_${dateStr}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast(`已导出 ${state.orders.length} 条记录`);
-}
-
-// 启动
+// ====== 启动 ======
 route();
 </script>
 </body>
