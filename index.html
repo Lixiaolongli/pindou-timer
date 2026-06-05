@@ -182,7 +182,7 @@ input:focus,select:focus{border-color:#d48080}
   <h3 style="margin-bottom:16px">添加商家</h3>
   <input type="tel" id="new-merchant-phone" placeholder="手机号" maxlength="11">
   <input type="text" id="new-merchant-name" placeholder="商家名称（选填）">
-  <input type="password" id="new-merchant-pw" placeholder="设置密码">
+  <input type="password" id="new-merchant-pw" placeholder="密码（默认123456）">
   <label style="font-size:.85em;color:#999;margin-top:8px;display:block">到期天数（默认365天）</label>
   <input type="number" id="new-merchant-days" value="365" min="1">
   <div style="display:flex;gap:10px;margin-top:16px">
@@ -315,8 +315,8 @@ async function loadMerchants(){
 }
 function showAddMerchant(){$('dlg-merchant').classList.add('show')}
 async function doAddMerchant(){
-  const phone=$('new-merchant-phone').value.trim(),name=$('new-merchant-name').value.trim(),pw=$('new-merchant-pw').value.trim(),days=parseInt($('new-merchant-days').value)||365;
-  if(!phone||!pw) return toast('请填写手机号和密码');
+  const phone=$('new-merchant-phone').value.trim(),name=$('new-merchant-name').value.trim(),pw=$('new-merchant-pw').value.trim()||'123456',days=parseInt($('new-merchant-days').value)||365;
+  if(!phone) return toast('请填写手机号');
   const r=await api('POST','/merchants',{phone,name,password:pw,days,action:'add'});
   if(!r||!r.ok) return toast(r?r.error:'添加失败');
   toast('✅ 添加成功');closeDlg('dlg-merchant');loadMerchants();
