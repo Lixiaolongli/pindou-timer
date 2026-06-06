@@ -76,7 +76,6 @@ input::placeholder{color:#c5bdb5}
 .merchant-phone{font-weight:600;font-size:.95em}
 .merchant-meta{font-size:.75em;color:var(--muted);margin-top:3px}
 .merchant-actions{display:flex;gap:6px;flex-shrink:0}
-.logo-icon{font-size:2.2em;display:block;margin-bottom:8px}
 .footer-note{text-align:center;color:var(--muted);font-size:.75em;padding:8px 0 24px;opacity:.6}
 /* 拼豆装饰 */
 .beads-bg{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;overflow:hidden}
@@ -123,8 +122,20 @@ input::placeholder{color:#c5bdb5}
 
 <!-- ====== 顾客端 ====== -->
 <div class="page active" id="page-customer">
+  <div class="beads-bg">
+    <div class="bead b1"></div><div class="bead b2"></div><div class="bead b3"></div><div class="bead b4"></div><div class="bead b5"></div><div class="bead b6"></div>
+    <div class="bead b7"></div><div class="bead b8"></div><div class="bead b9"></div><div class="bead b10"></div><div class="bead b11"></div><div class="bead b12"></div>
+    <div class="pegboard">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
   <div class="header">
-    <h1>🧩 拼豆计时</h1>
+    <div class="logo-wrap">
+      <span class="logo-bead"></span><span class="logo-bead"></span><span class="logo-bead"></span>
+      <span class="logo-bead"></span><span class="logo-bead c"></span><span class="logo-bead"></span>
+      <span class="logo-bead"></span><span class="logo-bead"></span><span class="logo-bead"></span>
+    </div>
+    <h1>拼豆计时</h1>
     <div class="sub" id="customer-shop-name">加载中...</div>
   </div>
   <div class="card" id="card-code">
@@ -183,7 +194,22 @@ input::placeholder{color:#c5bdb5}
 
 <!-- ====== 管理员面板 ====== -->
 <div class="page" id="page-admin">
-  <div class="header"><span class="logo-icon">⚙️</span><h1>管理后台</h1><div class="sub">管理员 · <span id="admin-name"></span></div></div>
+  <div class="beads-bg">
+    <div class="bead b1"></div><div class="bead b2"></div><div class="bead b3"></div><div class="bead b4"></div><div class="bead b5"></div><div class="bead b6"></div>
+    <div class="bead b7"></div><div class="bead b8"></div><div class="bead b9"></div><div class="bead b10"></div><div class="bead b11"></div><div class="bead b12"></div>
+    <div class="pegboard">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+  <div class="header">
+    <div class="logo-wrap">
+      <span class="logo-bead"></span><span class="logo-bead"></span><span class="logo-bead"></span>
+      <span class="logo-bead"></span><span class="logo-bead c"></span><span class="logo-bead"></span>
+      <span class="logo-bead"></span><span class="logo-bead"></span><span class="logo-bead"></span>
+    </div>
+    <h1>管理后台</h1>
+    <div class="sub">管理员 · <span id="admin-name"></span></div>
+  </div>
   <div class="admin-bar">
     <button class="btn btn-primary" onclick="showAddMerchant()">+ 添加商家</button>
     <button class="btn btn-outline" onclick="logout()">退出</button>
@@ -196,7 +222,22 @@ input::placeholder{color:#c5bdb5}
 
 <!-- ====== 商家面板 ====== -->
 <div class="page" id="page-merchant">
-  <div class="header"><span class="logo-icon">🧩</span><h1>拼豆计时</h1><div class="sub" id="merchant-shop-name"></div></div>
+  <div class="beads-bg">
+    <div class="bead b1"></div><div class="bead b2"></div><div class="bead b3"></div><div class="bead b4"></div><div class="bead b5"></div><div class="bead b6"></div>
+    <div class="bead b7"></div><div class="bead b8"></div><div class="bead b9"></div><div class="bead b10"></div><div class="bead b11"></div><div class="bead b12"></div>
+    <div class="pegboard">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+  <div class="header">
+    <div class="logo-wrap">
+      <span class="logo-bead"></span><span class="logo-bead"></span><span class="logo-bead"></span>
+      <span class="logo-bead"></span><span class="logo-bead c"></span><span class="logo-bead"></span>
+      <span class="logo-bead"></span><span class="logo-bead"></span><span class="logo-bead"></span>
+    </div>
+    <h1>拼豆计时</h1>
+    <div class="sub" id="merchant-shop-name"></div>
+  </div>
   <div class="admin-bar">
     <button class="btn btn-primary" onclick="showNewOrder()">+ 新订单</button>
     <button class="btn btn-outline" onclick="showQRCode()">📱 顾客入口</button>
