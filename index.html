@@ -329,6 +329,7 @@ input::placeholder{color:#c5bdb5}
     <button class="nav-btn" onclick="toggleMoreMenu()"><span class="nicon">⚙️</span>更多</button>
   </nav>
   <div class="more-menu" id="more-menu">
+    <button onclick="showVipInfo();toggleMoreMenu()">💎 VIP天数</button>
     <button onclick="exportCSV();toggleMoreMenu()">📥 导出CSV</button>
     <button onclick="showLogs();toggleMoreMenu()">📜 操作日志</button>
     <button onclick="showChangePwd();toggleMoreMenu()">🔒 修改密码</button>
@@ -490,6 +491,8 @@ async function login(){
   sessionStorage.setItem('pin_token',token);
   sessionStorage.setItem('pin_role',userRole);
   sessionStorage.setItem('pin_phone',userPhone);
+  sessionStorage.setItem('pin_expire',r.expireTime||'');
+  sessionStorage.setItem('pin_create',r.createTime||'');
   if(userRole==='admin') showAdmin();
   else showMerchant();
   document.getElementById('admin-name').textContent=r.name||userPhone;
@@ -539,8 +542,9 @@ async function loadMerchants(){
     const exp=m.expireTime?new Date(m.expireTime).toLocaleDateString('zh-CN'):'无';
     const st=m.status==='expired'?'🔴 已到期':m.status==='disabled'?'⚫ 已禁用':'🟢 正常';
     const isAdmin = m.role === 'admin';
+    const roleName=m.role==='admin'?'管理员':'商家';
     return `<div class="merchant-item">
-      <div class="merchant-info"><div class="merchant-phone">${m.phone}${m.name?' · '+m.name:''}</div><div class="merchant-meta">${st} · 到期:${exp} · 角色:${m.role}</div></div>
+      <div class="merchant-info"><div class="merchant-phone">${m.phone}${m.name?' · '+m.name:''}</div><div class="merchant-meta">${st} · 到期:${exp} · 角色:${roleName}</div></div>
       <div class="merchant-actions">
         ${isAdmin ? '' : `<button class="btn btn-sm btn-outline" onclick="showRenew('${m.phone}')">续费</button>
         <button class="btn btn-sm btn-danger" onclick="disableMerchant('${m.phone}')">禁用</button>
@@ -778,6 +782,18 @@ async function showLogs(){
   logList.innerHTML=logs.map(l=>`<div class="log-item"><div class="log-time">${new Date(l.time).toLocaleString('zh-CN')}</div><div class="log-action">${typeMap[l.type]||l.type}</div><div class="log-detail">${l.detail?JSON.stringify(l.detail):''}</div></div>`).join('');
 }
 function toggleMoreMenu(){$('more-menu').classList.toggle('show')}
+function showVipInfo(){
+  const exp=sessionStorage.getItem('pin_expire');
+  const createTime=sessionStorage.getItem('pin_create');
+  if(!exp) return toast('暂无VIP信息');
+  const expireDate=new Date(parseInt(exp)).toLocaleDateString('zh-CN');
+  const createDate=createTime?new Date(parseInt(createTime)).toLocaleDateString('zh-CN'):'未知';
+  const now=Date.now();
+  const remainDays=Math.max(0,Math.ceil((parseInt(exp)-now)/86400000));
+  const status=now>parseInt(exp)?'🔴 已到期':'🟢 正常';
+  toast('💎 开通时间: '+createDate+' | 到期时间: '+expireDate+' | 剩余: '+remainDays+'天 | '+status);
+  alert('💎 VIP信息\n\n开通时间: '+createDate+'\n到期时间: '+expireDate+'\n剩余天数: '+remainDays+'天\n状态: '+status.replace(/[🔴🟢]/g,'').trim());
+}
 async function showRenewLogs(){
   $('dlg-renew-logs').classList.add('show');
   const list=$('renew-log-list');list.innerHTML='加载中...';

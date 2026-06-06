@@ -67,7 +67,7 @@ export async function onRequest(context) {
     const tokens = JSON.parse(await env.PINDOU_KV.get('tokens') || '{}');
     tokens[token] = { phone, role: m.role, expireAt: Date.now() + 86400000 };
     await env.PINDOU_KV.put('tokens', JSON.stringify(tokens));
-    return json({ ok: true, token, role: m.role, phone, name: m.name });
+    return json({ ok: true, token, role: m.role, phone, name: m.name, expireTime: m.expireTime, createTime: m.createTime });
   }
 
   // ============ 修改密码 ============
