@@ -242,6 +242,7 @@ input::placeholder{color:#c5bdb5}
     <button class="btn btn-primary" onclick="showNewOrder()">+ 新订单</button>
     <button class="btn btn-outline" onclick="showQRCode()">📱 顾客入口</button>
     <button class="btn btn-outline" onclick="exportCSV()">📥 导出</button>
+    <button class="btn btn-outline" onclick="showPackages()">📦 套餐</button>
     <button class="btn btn-outline" onclick="showChangePwd()">🔒 改密</button>
     <button class="btn btn-outline" onclick="logout()" style="color:#999">退出</button>
   </div>
@@ -349,6 +350,26 @@ input::placeholder{color:#c5bdb5}
   </div>
 </div></div>
 
+<!-- ====== 套餐管理弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-packages"><div class="dialog">
+  <h3 style="margin-bottom:12px">📦 我的套餐</h3>
+  <div id="pkg-list" style="margin-bottom:16px">加载中...</div>
+  <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:12px">
+    <div class="card-title">添加套餐</div>
+    <input type="text" id="add-pkg-name" placeholder="套餐名称（如：单人1小时）">
+    <div style="display:flex;gap:8px">
+      <select id="add-pkg-type" style="flex:1;margin-top:0"><option value="single">单人</option><option value="double">双人</option></select>
+      <input type="number" id="add-pkg-minutes" value="60" min="0" max="480" step="5" style="flex:1;margin-top:0" placeholder="分钟(0=不限时)">
+      <input type="number" id="add-pkg-price" value="14.9" min="0" step="0.1" style="flex:1;margin-top:0" placeholder="价格">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-outline" onclick="closeDlg('dlg-packages')" style="flex:1">关闭</button>
+      <button class="btn btn-outline" onclick="resetPackages()" style="flex:0">🔄 重置</button>
+      <button class="btn btn-primary" onclick="addPackage()" style="flex:1">添加</button>
+    </div>
+  </div>
+</div></div>
+
 <script>
 const $=id=>document.getElementById(id);
 const API='/api';
@@ -365,7 +386,8 @@ async function api(method,path,body){
 }
 
 // ====== 常量 ======
-const PKG=[{name:'单人 1小时',price:14.9,minutes:60,type:'single'},{name:'双人 1小时',price:25,minutes:60,type:'double'},{name:'单人 不限时',price:39.9,minutes:0,type:'single'},{name:'双人 不限时',price:69.9,minutes:0,type:'double'}];
+const DEFAULT_PKG=[{name:'单人 1小时',price:14.9,minutes:60,type:'single'},{name:'双人 1小时',price:25,minutes:60,type:'double'},{name:'单人 不限时',price:39.9,minutes:0,type:'single'},{name:'双人 不限时',price:69.9,minutes:0,type:'double'}];
+let PKG=[...DEFAULT_PKG];
 
 // ====== 登录 ======
 async function login(){
@@ -476,7 +498,7 @@ async function showMerchant(){
     currentShopId=shops[0].id;currentShopName=shops[0].name;
     $('merchant-shop-name').textContent=currentShopName;
     sessionStorage.setItem('shopId',currentShopId);sessionStorage.setItem('shopName',currentShopName);
-    renderOrders();renderPackages();
+    await loadPackages();renderOrders();renderPackages();
   }
 }
 async function createShop(){
@@ -487,6 +509,41 @@ async function createShop(){
 }
 function renderPackages(){
   $('order-packages').innerHTML=PKG.map(p=>`<div class="package-btn" onclick="pickPkg(${p.minutes},${p.price},'${p.type}')"><div class="pkg-name">${p.name}</div><div class="pkg-price">¥${p.price}</div></div>`).join('');
+}
+async function loadPackages(){
+  const r=await api('GET','/packages?shopId='+currentShopId);
+  if(r&&r.ok&&r.packages){PKG=r.packages;renderPackages()}
+}
+async function showPackages(){
+  $('dlg-packages').classList.add('show');
+  await loadPackages();renderPkgList();
+}
+function renderPkgList(){
+  $('pkg-list').innerHTML=PKG.length
+    ?PKG.map((p,i)=>`<div class="order-item"><div class="order-left"><div class="order-name">${p.name}</div><div class="order-time">${p.type==='single'?'单人':'双人'} · ${p.minutes?p.minutes+'分钟':'不限时'} · ¥${p.price}</div></div><button class="btn btn-sm btn-danger" onclick="delPackage(${i})">删除</button></div>`).join('')
+    :'<div class="empty-text">暂无套餐</div>';
+}
+async function addPackage(){
+  const name=$('add-pkg-name').value.trim(),type=$('add-pkg-type').value,minutes=parseInt($('add-pkg-minutes').value)||0,price=parseFloat($('add-pkg-price').value)||0;
+  if(!name) return toast('请输入套餐名称');
+  PKG.push({name,type,minutes,price});
+  const r=await api('POST','/packages',{shopId:currentShopId,packages:PKG});
+  if(!r||!r.ok) return toast(r?r.error:'保存失败');
+  toast('✅ 套餐已添加');
+  renderPkgList();renderPackages();
+  $('add-pkg-name').value='';$('add-pkg-price').value='14.9';$('add-pkg-minutes').value='60';
+}
+async function delPackage(i){
+  PKG.splice(i,1);
+  const r=await api('POST','/packages',{shopId:currentShopId,packages:PKG});
+  if(!r||!r.ok) return toast(r?r.error:'保存失败');
+  toast('✅ 已删除');renderPkgList();renderPackages();
+}
+async function resetPackages(){
+  if(!confirm('确定恢复为默认套餐？你的自定义套餐将被覆盖。')) return;
+  PKG=[...DEFAULT_PKG];
+  await api('POST','/packages',{shopId:currentShopId,packages:PKG});
+  toast('✅ 已恢复默认套餐');renderPkgList();renderPackages();
 }
 function pickPkg(m,p,t){$('order-minutes').value=m;$('order-price').value=p;$('order-type').value=t}
 function showNewOrder(){if(!currentShopId) return toast('请先创建店铺');$('dlg-order').classList.add('show')}

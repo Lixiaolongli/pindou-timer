@@ -166,6 +166,26 @@ export async function onRequest(context) {
     return json({ ok: true, shop });
   }
 
+  // ============ 套餐管理 ============
+  if (path === '/api/packages' && request.method === 'GET') {
+    const shopId = url.searchParams.get('shopId');
+    if (!shopId) return json({ ok: false, error: '缺少shopId' }, 400);
+    const raw = await env.PINDOU_KV.get('packages') || '{}';
+    const data = JSON.parse(raw);
+    return json({ ok: true, packages: data[shopId] || null });
+  }
+  if (path === '/api/packages' && request.method === 'POST') {
+    const user = await auth(request, env);
+    if (!user || user.role !== 'merchant') return json({ ok: false, error: '无权限' }, 403);
+    const { shopId, packages } = await request.json();
+    if (!shopId) return json({ ok: false, error: '缺少shopId' }, 400);
+    const raw = await env.PINDOU_KV.get('packages') || '{}';
+    const data = JSON.parse(raw);
+    data[shopId] = packages;
+    await env.PINDOU_KV.put('packages', JSON.stringify(data));
+    return json({ ok: true });
+  }
+
   // ============ 店铺详情（公开） ============
   if (path.startsWith('/api/shops/') && request.method === 'GET') {
     const shopId = path.split('/')[3];

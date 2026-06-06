@@ -155,6 +155,24 @@ async function onRequest(context) {
     await env.PINDOU_KV.put("shops", JSON.stringify(shops));
     return json({ ok: true, shop });
   }
+  if (path === "/api/packages" && request.method === "GET") {
+    const shopId = url.searchParams.get("shopId");
+    if (!shopId) return json({ ok: false, error: "\u7F3A\u5C11shopId" }, 400);
+    const raw = await env.PINDOU_KV.get("packages") || "{}";
+    const data = JSON.parse(raw);
+    return json({ ok: true, packages: data[shopId] || null });
+  }
+  if (path === "/api/packages" && request.method === "POST") {
+    const user = await auth(request, env);
+    if (!user || user.role !== "merchant") return json({ ok: false, error: "\u65E0\u6743\u9650" }, 403);
+    const { shopId, packages } = await request.json();
+    if (!shopId) return json({ ok: false, error: "\u7F3A\u5C11shopId" }, 400);
+    const raw = await env.PINDOU_KV.get("packages") || "{}";
+    const data = JSON.parse(raw);
+    data[shopId] = packages;
+    await env.PINDOU_KV.put("packages", JSON.stringify(data));
+    return json({ ok: true });
+  }
   if (path.startsWith("/api/shops/") && request.method === "GET") {
     const shopId = path.split("/")[3];
     const raw = await env.PINDOU_KV.get("shops") || "[]";
@@ -746,7 +764,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-qn0nWR/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-kdF5JH/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -778,7 +796,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-qn0nWR/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-kdF5JH/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
