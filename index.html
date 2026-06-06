@@ -56,9 +56,8 @@ input::placeholder{color:#c5bdb5}
 .package-btn:active{background:#fef5f5;border-color:var(--c1);transform:scale(.96)}
 .pkg-name{font-weight:700;font-size:.95em;color:var(--text)}
 .pkg-price{color:var(--c1);font-size:.85em;margin-top:3px;font-weight:600}
-.dialog-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:100;justify-content:center;align-items:flex-end}
-.dialog-overlay.show{display:flex;animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.dialog-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);z-index:100;justify-content:center;align-items:flex-end}
+.dialog-overlay.show{display:flex}
 .dialog{background:var(--card);border-radius:20px 20px 0 0;padding:28px 22px 22px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;box-shadow:0 -4px 30px rgba(0,0,0,.1)}
 .dialog h3{font-size:1.1em;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px}
 .dialog label{font-size:.8em;color:var(--muted);display:block;margin-top:14px;font-weight:600}
