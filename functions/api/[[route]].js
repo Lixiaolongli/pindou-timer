@@ -180,15 +180,27 @@ export async function onRequest(context) {
   if (path === '/api/shops' && request.method === 'POST') {
     const user = await auth(request, env);
     if (!user || user.role !== 'merchant') return json({ ok: false, error: '无权限' }, 403);
+    const body = await request.json();
     const raw = await env.PINDOU_KV.get('shops') || '[]';
     let shops = JSON.parse(raw);
+
+    // 修改店铺名
+    if (body.action === 'rename') {
+      const idx = shops.findIndex(s => s.ownerPhone === user.phone && s.status === 'active');
+      if (idx === -1) return json({ ok: false, error: '店铺不存在' }, 404);
+      if (!body.name || !body.name.trim()) return json({ ok: false, error: '名称不能为空' }, 400);
+      shops[idx].name = body.name.trim();
+      await env.PINDOU_KV.put('shops', JSON.stringify(shops));
+      return json({ ok: true, name: shops[idx].name });
+    }
+
+    // 创建店铺
     if (shops.find(s => s.ownerPhone === user.phone && s.status === 'active')) {
       return json({ ok: false, error: '已有一个店铺，不能重复创建' }, 400);
     }
-    const { name } = await request.json();
     const shop = {
       id: crypto.randomUUID().slice(0, 8),
-      name: name || '拼豆手工坊',
+      name: body.name || '拼豆手工坊',
       ownerPhone: user.phone,
       status: 'active',
       createTime: Date.now(),

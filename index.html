@@ -330,6 +330,7 @@ input::placeholder{color:#c5bdb5}
   </nav>
   <div class="more-menu" id="more-menu">
     <button onclick="showVipInfo();toggleMoreMenu()">💎 VIP天数</button>
+    <button onclick="showRenameShop();toggleMoreMenu()">✏️ 修改店名</button>
     <button onclick="exportCSV();toggleMoreMenu()">📥 导出CSV</button>
     <button onclick="showLogs();toggleMoreMenu()">📜 操作日志</button>
     <button onclick="showChangePwd();toggleMoreMenu()">🔒 修改密码</button>
@@ -380,8 +381,8 @@ input::placeholder{color:#c5bdb5}
   <input type="tel" id="new-merchant-phone" placeholder="手机号" maxlength="11">
   <input type="text" id="new-merchant-name" placeholder="商家名称（选填）">
   <input type="password" id="new-merchant-pw" placeholder="密码（默认123456）">
-  <label style="font-size:.85em;color:#999;margin-top:8px;display:block">到期天数（默认365天）</label>
-  <input type="number" id="new-merchant-days" value="365" min="1">
+  <label style="font-size:.85em;color:#999;margin-top:8px;display:block">到期天数（默认30天）</label>
+  <input type="number" id="new-merchant-days" value="30" min="1">
   <div style="display:flex;gap:10px;margin-top:16px">
     <button class="btn btn-outline" onclick="closeDlg('dlg-merchant')" style="flex:1">取消</button>
     <button class="btn btn-primary" onclick="doAddMerchant()" style="flex:1">确认添加</button>
@@ -460,6 +461,16 @@ input::placeholder{color:#c5bdb5}
   <h3 style="margin-bottom:16px">📜 续费/天数变更记录</h3>
   <div id="renew-log-list">加载中...</div>
   <button class="btn btn-outline" onclick="closeDlg('dlg-renew-logs')" style="margin-top:16px">关闭</button>
+</div></div>
+
+<!-- ====== 修改店名弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-rename-shop"><div class="dialog">
+  <h3 style="margin-bottom:16px">✏️ 修改店铺名称</h3>
+  <input type="text" id="rename-shop-input" placeholder="输入新店名">
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn btn-outline" onclick="closeDlg('dlg-rename-shop')" style="flex:1">取消</button>
+    <button class="btn btn-primary" onclick="doRenameShop()" style="flex:1">确认修改</button>
+  </div>
 </div></div>
 
 <script>
@@ -554,7 +565,7 @@ async function loadMerchants(){
 }
 function showAddMerchant(){$('dlg-merchant').classList.add('show')}
 async function doAddMerchant(){
-  const phone=$('new-merchant-phone').value.trim(),name=$('new-merchant-name').value.trim(),pw=$('new-merchant-pw').value.trim()||'123456',days=parseInt($('new-merchant-days').value)||365;
+  const phone=$('new-merchant-phone').value.trim(),name=$('new-merchant-name').value.trim(),pw=$('new-merchant-pw').value.trim()||'123456',days=parseInt($('new-merchant-days').value)||30;
   if(!phone) return toast('请填写手机号');
   const r=await api('POST','/merchants',{phone,name,password:pw,days,action:'add'});
   if(!r||!r.ok) return toast(r?r.error:'添加失败');
@@ -782,6 +793,20 @@ async function showLogs(){
   logList.innerHTML=logs.map(l=>`<div class="log-item"><div class="log-time">${new Date(l.time).toLocaleString('zh-CN')}</div><div class="log-action">${typeMap[l.type]||l.type}</div><div class="log-detail">${l.detail?JSON.stringify(l.detail):''}</div></div>`).join('');
 }
 function toggleMoreMenu(){$('more-menu').classList.toggle('show')}
+function showRenameShop(){
+  $('rename-shop-input').value=currentShopName||'';
+  $('dlg-rename-shop').classList.add('show');
+}
+async function doRenameShop(){
+  const name=$('rename-shop-input').value.trim();
+  if(!name) return toast('名称不能为空');
+  const r=await api('POST','/shops',{action:'rename',name});
+  if(!r||!r.ok) return toast(r?r.error:'修改失败');
+  currentShopName=name;
+  sessionStorage.setItem('shopName',name);
+  $('merchant-shop-name').textContent=name;
+  toast('✅ 店名已修改');closeDlg('dlg-rename-shop');
+}
 function showVipInfo(){
   const exp=sessionStorage.getItem('pin_expire');
   const createTime=sessionStorage.getItem('pin_create');

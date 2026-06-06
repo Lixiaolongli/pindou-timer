@@ -171,15 +171,23 @@ async function onRequest(context) {
   if (path === "/api/shops" && request.method === "POST") {
     const user = await auth(request, env);
     if (!user || user.role !== "merchant") return json({ ok: false, error: "\u65E0\u6743\u9650" }, 403);
+    const body = await request.json();
     const raw = await env.PINDOU_KV.get("shops") || "[]";
     let shops = JSON.parse(raw);
+    if (body.action === "rename") {
+      const idx = shops.findIndex((s) => s.ownerPhone === user.phone && s.status === "active");
+      if (idx === -1) return json({ ok: false, error: "\u5E97\u94FA\u4E0D\u5B58\u5728" }, 404);
+      if (!body.name || !body.name.trim()) return json({ ok: false, error: "\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A" }, 400);
+      shops[idx].name = body.name.trim();
+      await env.PINDOU_KV.put("shops", JSON.stringify(shops));
+      return json({ ok: true, name: shops[idx].name });
+    }
     if (shops.find((s) => s.ownerPhone === user.phone && s.status === "active")) {
       return json({ ok: false, error: "\u5DF2\u6709\u4E00\u4E2A\u5E97\u94FA\uFF0C\u4E0D\u80FD\u91CD\u590D\u521B\u5EFA" }, 400);
     }
-    const { name } = await request.json();
     const shop = {
       id: crypto.randomUUID().slice(0, 8),
-      name: name || "\u62FC\u8C46\u624B\u5DE5\u574A",
+      name: body.name || "\u62FC\u8C46\u624B\u5DE5\u574A",
       ownerPhone: user.phone,
       status: "active",
       createTime: Date.now()
@@ -882,7 +890,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-EzWWZk/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-KBuV9U/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -914,7 +922,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-EzWWZk/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-KBuV9U/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
