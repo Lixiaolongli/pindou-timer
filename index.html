@@ -488,7 +488,8 @@ let token='',userRole='',userPhone='',currentShopId='',currentShopName='',curren
 
 // ====== 工具 ======
 function toast(msg){const e=$('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2000)}
-function closeDlg(id){$(id).classList.remove('show');document.body.style.overflow=''}
+function closeDlg(id){$(id).classList.remove('show');document.body.style.overflow='';startAutoRefresh();startTick();}
+function openDlg(id){stopTimers();$(id).classList.add('show');document.body.style.overflow='hidden';}
 async function api(method,path,body){
   const opts={method,headers:{'Content-Type':'application/json'}};
   if(token) opts.headers.Authorization='Bearer '+token;
@@ -518,7 +519,7 @@ async function login(){
 }
 
 function logout(){token='';userRole='';userPhone='';sessionStorage.clear();route()}
-function showChangePwd(){$('dlg-chpwd').classList.add('show');$('chpwd-old').value='';$('chpwd-new').value='';$('chpwd-confirm').value='';document.body.style.overflow='hidden'}
+function showChangePwd(){openDlg('dlg-chpwd');$('chpwd-old').value='';$('chpwd-new').value='';$('chpwd-confirm').value=''}
 async function doChangePwd(){
   const oldPw=$('chpwd-old').value.trim(),newPw=$('chpwd-new').value.trim(),cfm=$('chpwd-confirm').value.trim();
   if(!oldPw||!newPw) return toast('请填写新旧密码');
@@ -571,7 +572,7 @@ async function loadMerchants(){
       </div></div>`;
   }).join('');
 }
-function showAddMerchant(){$('dlg-merchant').classList.add('show');document.body.style.overflow='hidden'}
+function showAddMerchant(){openDlg('dlg-merchant')}
 async function doAddMerchant(){
   const phone=$('new-merchant-phone').value.trim(),name=$('new-merchant-name').value.trim(),pw=$('new-merchant-pw').value.trim()||'123456',days=parseInt($('new-merchant-days').value)||30;
   if(!phone) return toast('请填写手机号');
@@ -591,7 +592,7 @@ function setRenewMode(m){
 function showRenew(phone){
   renewPhone=phone;renewMode='add';
   $('renew-info').textContent='商家: '+phone;
-  $('dlg-renew').classList.add('show');document.body.style.overflow='hidden';
+  openDlg('dlg-renew');
   $('renew-days').value=30;
   setRenewMode('add');
 }
@@ -650,7 +651,7 @@ async function loadPackages(){
   if(r&&r.ok&&r.packages){PKG=r.packages;renderPackages()}
 }
 async function showPackages(){
-  $('dlg-packages').classList.add('show');document.body.style.overflow='hidden';
+  openDlg('dlg-packages');
   await loadPackages();renderPkgList();
 }
 function renderPkgList(){
@@ -681,7 +682,7 @@ async function resetPackages(){
   toast('✅ 已恢复默认套餐');renderPkgList();renderPackages();
 }
 function pickPkg(m,p,t){$('order-minutes').value=m;$('order-price').value=p;$('order-type').value=t}
-function showNewOrder(){if(!currentShopId) return toast('请先创建店铺');$('dlg-order').classList.add('show');document.body.style.overflow='hidden'}
+function showNewOrder(){if(!currentShopId) return toast('请先创建店铺');openDlg('dlg-order')}
 
 async function createOrder(){
   const code=$('order-code').value.trim();
@@ -797,7 +798,7 @@ async function showStats(){
   }
 }
 async function showLogs(){
-  $('dlg-logs').classList.add('show');document.body.style.overflow='hidden';
+  openDlg('dlg-logs');
   const logList=$('log-list');logList.innerHTML='加载中...';
   const r=await api('GET','/logs?shopId='+currentShopId);
   if(!r||!r.ok) return (logList.innerHTML='<div class="empty-text">加载失败</div>');
@@ -837,7 +838,7 @@ function updateShopStatusUI(){
 }
 function showRenameShop(){
   $('rename-shop-input').value=currentShopName||'';
-  $('dlg-rename-shop').classList.add('show');document.body.style.overflow='hidden';
+  openDlg('dlg-rename-shop');
 }
 async function doRenameShop(){
   const name=$('rename-shop-input').value.trim();
@@ -862,7 +863,7 @@ function showVipInfo(){
   alert('💎 VIP信息\n\n开通时间: '+createDate+'\n到期时间: '+expireDate+'\n剩余天数: '+remainDays+'天\n状态: '+status.replace(/[🔴🟢]/g,'').trim());
 }
 async function showRenewLogs(){
-  $('dlg-renew-logs').classList.add('show');document.body.style.overflow='hidden';
+  openDlg('dlg-renew-logs');
   const list=$('renew-log-list');list.innerHTML='加载中...';
   const r=await api('GET','/renew-logs');
   if(!r||!r.ok) return (list.innerHTML='<div class="empty-text">加载失败或无权限</div>');
@@ -878,7 +879,7 @@ async function showRenewLogs(){
 function onSearch(){renderOrders()}
 function onNavFilter(status){$('filter-status').value=status;renderOrders();document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));event.target.closest('.nav-btn').classList.add('active')}
 let extendCode='';
-function showExtend(code){extendCode=code;$('extend-info').textContent='手机尾号: '+code;$('dlg-extend').classList.add('show');document.body.style.overflow='hidden'}
+function showExtend(code){extendCode=code;$('extend-info').textContent='手机尾号: '+code;openDlg('dlg-extend')}
 async function doExtend(){
   const m=parseInt($('extend-minutes').value)||30,p=parseFloat($('extend-price').value)||0;
   if(!confirm(`续时 ${m} 分钟，¥${p}？`)) return;
@@ -887,7 +888,7 @@ async function doExtend(){
   toast('✅ 续时成功');closeDlg('dlg-extend');renderOrders();
 }
 function showQRCode(){
-  $('dlg-qr').classList.add('show');document.body.style.overflow='hidden';
+  openDlg('dlg-qr');
   const url=location.origin+location.pathname+'?shopId='+currentShopId;
   const qrImg=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=212-128-128&data=${encodeURIComponent(url)}`;
   $('qr-content').innerHTML=`<img src="${qrImg}" alt="二维码" onerror="this.onerror=null;this.nextSibling.style.display='block';this.style.display='none'"><div style="display:none;font-family:monospace;font-size:.7em;color:#999;word-break:break-all;margin-top:8px">${url}</div><p style="margin-top:8px;color:#d48080;font-weight:600">📱 顾客扫码输入手机后4位查看计时</p>`;
@@ -958,28 +959,39 @@ async function showHistory(){
 
 // ====== 自动刷新 ======
 let refreshBusy=false;
-setInterval(async()=>{if(refreshBusy||!currentShopId||!$('page-merchant').classList.contains('active'))return;refreshBusy=true;await renderOrders();showStats();refreshBusy=false},5000);
+let refreshTimer=null,tickTimer=null;
 
-// 前端每秒刷新倒计时（不请求后端）
-setInterval(()=>{
-  if(!currentShopId||!$('page-merchant').classList.contains('active'))return;
-  document.querySelectorAll('#active-orders .order-item').forEach(el=>{
-    const timeEl=el.querySelector('.order-time');
-    const statusEl=el.querySelector('.order-status-inline');
-    if(!timeEl||!statusEl)return;
-    const txt=timeEl.textContent.trim();
-    if(txt.includes('不限时')||txt.includes('到期'))return;
-    const parts=txt.split(':');
-    let mins=parseInt(parts[0]),secs=parseInt(parts[1]);
-    if(isNaN(mins)||isNaN(secs))return;
-    secs--;
-    if(secs<0){mins--;secs=59}
-    if(mins<0){timeEl.textContent='已到期';statusEl.textContent='⚠️到期';statusEl.className='order-status-inline status-expired';return}
-    const newTxt=mins+':'+String(secs).padStart(2,'0');
-    timeEl.textContent=newTxt;
-    statusEl.textContent=newTxt;
-  });
-},1000);
+function startAutoRefresh(){
+  if(refreshTimer) return;
+  refreshTimer = setInterval(async()=>{if(refreshBusy||!currentShopId||!$('page-merchant').classList.contains('active'))return;refreshBusy=true;await renderOrders();showStats();refreshBusy=false},5000);
+}
+function startTick(){
+  if(tickTimer) return;
+  tickTimer = setInterval(()=>{
+    if(!currentShopId||!$('page-merchant').classList.contains('active'))return;
+    document.querySelectorAll('#active-orders .order-item').forEach(el=>{
+      const timeEl=el.querySelector('.order-time');
+      const statusEl=el.querySelector('.order-status-inline');
+      if(!timeEl||!statusEl)return;
+      const txt=timeEl.textContent.trim();
+      if(txt.includes('不限时')||txt.includes('到期'))return;
+      const parts=txt.split(':');
+      let mins=parseInt(parts[0]),secs=parseInt(parts[1]);
+      if(isNaN(mins)||isNaN(secs))return;
+      secs--;
+      if(secs<0){mins--;secs=59}
+      if(mins<0){timeEl.textContent='已到期';statusEl.textContent='⚠️到期';statusEl.className='order-status-inline status-expired';return}
+      const newTxt=mins+':'+String(secs).padStart(2,'0');
+      timeEl.textContent=newTxt;
+      statusEl.textContent=newTxt;
+    });
+  },1000);
+}
+function stopTimers(){
+  if(refreshTimer){clearInterval(refreshTimer);refreshTimer=null;}
+  if(tickTimer){clearInterval(tickTimer);tickTimer=null;}
+}
+startAutoRefresh();startTick();
 
 // ====== 启动 ======
 route();
