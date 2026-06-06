@@ -566,19 +566,29 @@ async function renderOrders(){
   $('done-orders').innerHTML=done.length?done.slice(0,20).map(o=>renderOrderItem(o,false)).join(''):'<div class="empty-text">暂无记录</div>';
 }
 function renderOrderItem(o,isActive){
-  const endAt=o.minutes>0?o.startTime+o.minutes*60000:null;
-  const remain=endAt?Math.max(0,Math.ceil((endAt-Date.now())/1000)):null;
-  const rs=remain===null?'不限时♾️':remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0');
-  const expired=endAt&&Date.now()>=endAt;
-  return `<div class="order-item"><div class="order-left">
-    <div class="order-code">${o.code}</div>
-    <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
-    <div class="order-time">${rs}</div></div>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-    ${isActive?`<span class="order-status ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
-    <button class="btn btn-sm btn-danger" onclick="completeOrder('${o.code}')">完成</button>
-    ${o.minutes>0?`<button class="btn btn-sm btn-primary" onclick="showExtend('${o.code}')">续时</button>`:''}`:'<span class="order-status status-done">✅完成</span>'}
-    </div></div>`;
+  if(isActive){
+    const endAt=o.minutes>0?o.startTime+o.minutes*60000:null;
+    const remain=endAt?Math.max(0,Math.ceil((endAt-Date.now())/1000)):null;
+    const rs=remain===null?'不限时♾️':remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0');
+    const expired=endAt&&Date.now()>=endAt;
+    return `<div class="order-item"><div class="order-left">
+      <div class="order-code">${o.code}</div>
+      <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
+      <div class="order-time">${rs}</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <span class="order-status ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
+      <button class="btn btn-sm btn-danger" onclick="completeOrder('${o.code}')">完成</button>
+      ${o.minutes>0?`<button class="btn btn-sm btn-primary" onclick="showExtend('${o.code}')">续时</button>`:''}
+      </div></div>`;
+  }else{
+    const doneTime=new Date(o.doneTime||o.createTime).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="order-item"><div class="order-left">
+      <div class="order-code">${o.code}</div>
+      <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
+      <div class="order-time">${doneTime} 完成</div></div>
+      <span class="order-status status-done">✅完成</span>
+    </div>`;
+  }
 }
 
 async function completeOrder(code){
