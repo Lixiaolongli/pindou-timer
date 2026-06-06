@@ -151,6 +151,11 @@ export async function onRequest(context) {
     } else {
       return json({ ok: false, error: '无效操作' }, 400);
     }
+    const tokens = JSON.parse(await env.PINDOU_KV.get('tokens') || '{}');
+    for (const k of Object.keys(tokens)) {
+      if (tokens[k].phone === phone) delete tokens[k];
+    }
+    await env.PINDOU_KV.put('tokens', JSON.stringify(tokens));
     await env.PINDOU_KV.put('merchants', JSON.stringify(merchants));
     return json({ ok: true });
   }
