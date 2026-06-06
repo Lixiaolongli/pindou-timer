@@ -139,7 +139,7 @@ async function onRequest(context) {
     } else if (act === "disable") {
       const m = merchants.find((m2) => m2.phone === phone);
       if (!m) return json({ ok: false, error: "\u5546\u5BB6\u4E0D\u5B58\u5728" }, 404);
-      m.status = "disabled";
+      m.status = m.status === "disabled" ? "active" : "disabled";
     } else if (act === "delete") {
       merchants = merchants.filter((m) => m.phone !== phone);
       const shops = JSON.parse(await env.PINDOU_KV.get("shops") || "[]");
@@ -181,6 +181,13 @@ async function onRequest(context) {
       shops[idx].name = body.name.trim();
       await env.PINDOU_KV.put("shops", JSON.stringify(shops));
       return json({ ok: true, name: shops[idx].name });
+    }
+    if (body.action === "toggle") {
+      const idx = shops.findIndex((s) => s.ownerPhone === user.phone);
+      if (idx === -1) return json({ ok: false, error: "\u5E97\u94FA\u4E0D\u5B58\u5728" }, 404);
+      shops[idx].status = shops[idx].status === "active" ? "paused" : "active";
+      await env.PINDOU_KV.put("shops", JSON.stringify(shops));
+      return json({ ok: true, status: shops[idx].status });
     }
     if (shops.find((s) => s.ownerPhone === user.phone && s.status === "active")) {
       return json({ ok: false, error: "\u5DF2\u6709\u4E00\u4E2A\u5E97\u94FA\uFF0C\u4E0D\u80FD\u91CD\u590D\u521B\u5EFA" }, 400);
@@ -323,6 +330,37 @@ async function onRequest(context) {
     await env.PINDOU_KV.put("orders", JSON.stringify(orders));
     await addLog(env, "extend", { phone: user.phone, shopId, code, minutes, price });
     return json({ ok: true, order });
+  }
+  if (path === "/api/orders/edit" && request.method === "POST") {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: "\u672A\u767B\u5F55" }, 401);
+    const body = await request.json();
+    const { shopId, orderId, code, type, price, minutes } = body;
+    if (!shopId || !orderId || !code || !/^\d{4}$/.test(code)) return json({ ok: false, error: "\u53C2\u6570\u9519\u8BEF" }, 400);
+    const raw = await env.PINDOU_KV.get("orders") || "[]";
+    let orders = JSON.parse(raw);
+    const idx = orders.findIndex((o) => o.id === orderId && o.shopId === shopId);
+    if (idx === -1) return json({ ok: false, error: "\u8BA2\u5355\u4E0D\u5B58\u5728" }, 404);
+    orders[idx].code = code;
+    orders[idx].type = type || "single";
+    orders[idx].price = Number(price) || 0;
+    orders[idx].minutes = Number(minutes) || 0;
+    await env.PINDOU_KV.put("orders", JSON.stringify(orders));
+    return json({ ok: true, order: orders[idx] });
+  }
+  if (path === "/api/orders/delete" && request.method === "POST") {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: "\u672A\u767B\u5F55" }, 401);
+    const body = await request.json();
+    const { shopId, orderId } = body;
+    if (!shopId || !orderId) return json({ ok: false, error: "\u53C2\u6570\u9519\u8BEF" }, 400);
+    const raw = await env.PINDOU_KV.get("orders") || "[]";
+    let orders = JSON.parse(raw);
+    const idx = orders.findIndex((o) => o.id === orderId && o.shopId === shopId);
+    if (idx === -1) return json({ ok: false, error: "\u8BA2\u5355\u4E0D\u5B58\u5728" }, 404);
+    const deleted = orders.splice(idx, 1)[0];
+    await env.PINDOU_KV.put("orders", JSON.stringify(orders));
+    return json({ ok: true, code: deleted.code });
   }
   if (path === "/api/orders/remove" && request.method === "POST") {
     const user = await auth(request, env);
@@ -890,7 +928,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-ovOdgR/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-KAfNRo/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -922,7 +960,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-ovOdgR/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-KAfNRo/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

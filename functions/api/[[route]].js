@@ -359,6 +359,41 @@ export async function onRequest(context) {
     return json({ ok: true, order });
   }
 
+  // ============ 编辑订单 ============
+  if (path === '/api/orders/edit' && request.method === 'POST') {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: '未登录' }, 401);
+    const body = await request.json();
+    const { shopId, orderId, code, type, price, minutes } = body;
+    if (!shopId || !orderId || !code || !/^\d{4}$/.test(code)) return json({ ok: false, error: '参数错误' }, 400);
+    const raw = await env.PINDOU_KV.get('orders') || '[]';
+    let orders = JSON.parse(raw);
+    const idx = orders.findIndex(o => o.id === orderId && o.shopId === shopId);
+    if (idx === -1) return json({ ok: false, error: '订单不存在' }, 404);
+    orders[idx].code = code;
+    orders[idx].type = type || 'single';
+    orders[idx].price = Number(price) || 0;
+    orders[idx].minutes = Number(minutes) || 0;
+    await env.PINDOU_KV.put('orders', JSON.stringify(orders));
+    return json({ ok: true, order: orders[idx] });
+  }
+
+  // ============ 删除订单（按ID精确删除）============
+  if (path === '/api/orders/delete' && request.method === 'POST') {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: '未登录' }, 401);
+    const body = await request.json();
+    const { shopId, orderId } = body;
+    if (!shopId || !orderId) return json({ ok: false, error: '参数错误' }, 400);
+    const raw = await env.PINDOU_KV.get('orders') || '[]';
+    let orders = JSON.parse(raw);
+    const idx = orders.findIndex(o => o.id === orderId && o.shopId === shopId);
+    if (idx === -1) return json({ ok: false, error: '订单不存在' }, 404);
+    const deleted = orders.splice(idx, 1)[0];
+    await env.PINDOU_KV.put('orders', JSON.stringify(orders));
+    return json({ ok: true, code: deleted.code });
+  }
+
   // ============ 删除订单 ============
   if (path === '/api/orders/remove' && request.method === 'POST') {
     const user = await auth(request, env);

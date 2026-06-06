@@ -383,6 +383,24 @@ input::placeholder{color:#c5bdb5}
   <button class="btn btn-outline" onclick="closeDlg('dlg-qr')">关闭</button>
 </div></div>
 
+<!-- ====== 编辑订单弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-edit-order"><div class="dialog">
+  <h3>✏️ 编辑订单</h3>
+  <input type="tel" id="edit-order-code" placeholder="手机尾号（4位）" maxlength="4">
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <select id="edit-order-type" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card)">
+      <option value="single">👤 单人</option>
+      <option value="double">👥 双人</option>
+    </select>
+    <input type="number" id="edit-order-price" placeholder="价格" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card)">
+  </div>
+  <input type="number" id="edit-order-minutes" placeholder="分钟数（0=不限时）" style="margin-top:12px">
+  <div style="display:flex;gap:8px;margin-top:16px">
+    <button class="btn btn-outline" onclick="closeDlg('dlg-edit-order')" style="flex:1">取消</button>
+    <button class="btn btn-primary" onclick="doEditOrder()" style="flex:1">💾 保存</button>
+  </div>
+</div></div>
+
 <!-- ====== 添加商家弹窗 ====== -->
 <div class="dialog-overlay" id="dlg-merchant"><div class="dialog">
   <h3 style="margin-bottom:16px">添加商家</h3>
@@ -736,6 +754,8 @@ function renderOrderItem(o,isActive){
         <div class="order-time">${rs}</div></div>
       <span class="order-status-inline ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
       <div class="order-actions">
+        <button class="btn btn-sm" onclick="event.stopPropagation();editOrder('${o.id}','${o.code}','${o.type}','${o.price}','${o.minutes}')" title="编辑">✏️</button>
+        <button class="btn btn-sm" onclick="event.stopPropagation();deleteOrder('${o.id}','${o.code}')" title="删除">🗑️</button>
         <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();completeOrder('${o.code}')">完成</button>
         ${o.minutes>0?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();showExtend('${o.code}')">续时</button>`:''}
       </div></div>`;
@@ -746,12 +766,39 @@ function renderOrderItem(o,isActive){
       <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
       <div class="order-time">${doneTime} 完成</div></div>
       <span class="order-status status-done">✅完成</span>
+      <button class="btn btn-sm" onclick="event.stopPropagation();deleteOrder('${o.id}','${o.code}')" title="删除" style="margin-left:8px">🗑️</button>
     </div>`;
   }
   }
 async function completeOrder(code){
   if(!confirm('确定完成手机尾号 '+code+'？')) return;
   await api('POST','/orders/complete',{shopId:currentShopId,code});renderOrders();showStats();
+}
+let editingOrderId=null;
+function editOrder(id,code,type,price,minutes){
+  editingOrderId=id;
+  $('edit-order-code').value=code;
+  $('edit-order-type').value=type||'single';
+  $('edit-order-price').value=price||0;
+  $('edit-order-minutes').value=minutes||0;
+  openDlg('dlg-edit-order');
+}
+async function doEditOrder(){
+  const code=$('edit-order-code').value.trim();
+  const type=$('edit-order-type').value;
+  const price=parseFloat($('edit-order-price').value)||0;
+  const minutes=parseInt($('edit-order-minutes').value)||0;
+  if(!/^\d{4}$/.test(code)) return toast('请输入4位手机尾号');
+  if(!confirm('确定保存修改？')) return;
+  const r=await api('POST','/orders/edit',{shopId:currentShopId,orderId:editingOrderId,code,type,price,minutes});
+  if(!r||!r.ok) return toast(r?r.error:'修改失败');
+  toast('✅ 已修改');closeDlg('dlg-edit-order');renderOrders();showStats();
+}
+async function deleteOrder(id,code){
+  if(!confirm('确定删除尾号 '+code+' 的订单？此操作不可恢复！')) return;
+  const r=await api('POST','/orders/delete',{shopId:currentShopId,orderId:id});
+  if(!r||!r.ok) return toast(r?r.error:'删除失败');
+  toast('🗑️ 已删除 '+code);renderOrders();showStats();
 }
 function onCheck(){updateBatchBar()}
 function updateBatchBar(){
