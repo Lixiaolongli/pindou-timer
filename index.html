@@ -576,6 +576,7 @@ function showAddMerchant(){openDlg('dlg-merchant')}
 async function doAddMerchant(){
   const phone=$('new-merchant-phone').value.trim(),name=$('new-merchant-name').value.trim(),pw=$('new-merchant-pw').value.trim()||'123456',days=parseInt($('new-merchant-days').value)||30;
   if(!phone) return toast('请填写手机号');
+  if(!/^1[3-9]\d{9}$/.test(phone)) return toast('请输入正确的11位手机号');
   const r=await api('POST','/merchants',{phone,name,password:pw,days,action:'add'});
   if(!r||!r.ok) return toast(r?r.error:'添加失败');
   toast('✅ 添加成功');closeDlg('dlg-merchant');loadMerchants();
