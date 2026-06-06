@@ -689,9 +689,13 @@ async function renderOrders(){
   if(search) url+='&search='+search;
   if(status!=='all') url+='&status='+status;
   const r=await api('GET',url);
+  if(!r||!r.ok){ console.warn('[renderOrders] API失败', r); return; }
   const orders=r&&r.ok?r.orders:[];
   const active=orders.filter(o=>o.status==='active'),done=orders.filter(o=>o.status!=='active');
   $('active-count').textContent=active.length;
+  // 在title上显示所有进行中订单尾号（长按可查看）
+  const countEl = $('active-count');
+  if(countEl) countEl.title = active.length ? '尾号: '+active.map(o=>o.code).join(', ') : '';
   const now=Date.now();
   active.sort((a,b)=>{
     const rA=a.minutes>0?Math.max(0,a.startTime+a.minutes*60000-now):999999999;
