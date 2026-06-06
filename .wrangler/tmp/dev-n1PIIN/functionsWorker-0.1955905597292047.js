@@ -128,8 +128,20 @@ async function onRequest(context) {
       const m = merchants.find((m2) => m2.phone === phone);
       if (!m) return json({ ok: false, error: "\u5546\u5BB6\u4E0D\u5B58\u5728" }, 404);
       const d = parseInt(days) || 30;
+      const oldExpire = m.expireTime;
       m.status = "active";
       m.expireTime = Math.max(Date.now() + 864e5, (m.expireTime || Date.now()) + d * 864e5);
+      const logRaw = await env.PINDOU_KV.get("renew_logs") || "[]";
+      const logs = JSON.parse(logRaw);
+      logs.push({
+        phone,
+        days: d,
+        oldExpire: oldExpire || Date.now(),
+        newExpire: m.expireTime,
+        time: Date.now(),
+        operator: user.phone
+      });
+      await env.PINDOU_KV.put("renew_logs", JSON.stringify(logs.slice(-500)));
     } else if (act === "disable") {
       const m = merchants.find((m2) => m2.phone === phone);
       if (!m) return json({ ok: false, error: "\u5546\u5BB6\u4E0D\u5B58\u5728" }, 404);
@@ -315,6 +327,12 @@ async function onRequest(context) {
     const shopId = url.searchParams.get("shopId");
     if (shopId) return json({ ok: true, logs: logs.filter((l) => l.detail && l.detail.shopId === shopId).slice(-200) });
     return json({ ok: true, logs: logs.slice(-200) });
+  }
+  if (path === "/api/renew-logs" && request.method === "GET") {
+    const user = await auth(request, env);
+    if (!user || user.role !== "admin") return json({ ok: false, error: "\u65E0\u6743\u9650" }, 403);
+    const raw = await env.PINDOU_KV.get("renew_logs") || "[]";
+    return json({ ok: true, logs: JSON.parse(raw) });
   }
   if (path === "/api/stats" && request.method === "GET") {
     const user = await auth(request, env);

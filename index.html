@@ -257,6 +257,8 @@ input::placeholder{color:#c5bdb5}
   </div>
   <div class="admin-bar">
     <button class="btn btn-primary" onclick="showAddMerchant()">+ 添加商家</button>
+    <button class="btn btn-outline" onclick="showChangePwd()">🔒 改密</button>
+    <button class="btn btn-outline" onclick="showRenewLogs()">📜 续费记录</button>
     <button class="btn btn-outline" onclick="logout()">退出</button>
   </div>
   <div class="card">
@@ -450,6 +452,13 @@ input::placeholder{color:#c5bdb5}
   <h3 style="margin-bottom:16px">📜 操作日志</h3>
   <div id="log-list">加载中...</div>
   <button class="btn btn-outline" onclick="closeDlg('dlg-logs')" style="margin-top:16px">关闭</button>
+</div></div>
+
+<!-- ====== 续费记录弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-renew-logs"><div class="dialog">
+  <h3 style="margin-bottom:16px">📜 续费/天数变更记录</h3>
+  <div id="renew-log-list">加载中...</div>
+  <button class="btn btn-outline" onclick="closeDlg('dlg-renew-logs')" style="margin-top:16px">关闭</button>
 </div></div>
 
 <script>
@@ -769,6 +778,20 @@ async function showLogs(){
   logList.innerHTML=logs.map(l=>`<div class="log-item"><div class="log-time">${new Date(l.time).toLocaleString('zh-CN')}</div><div class="log-action">${typeMap[l.type]||l.type}</div><div class="log-detail">${l.detail?JSON.stringify(l.detail):''}</div></div>`).join('');
 }
 function toggleMoreMenu(){$('more-menu').classList.toggle('show')}
+async function showRenewLogs(){
+  $('dlg-renew-logs').classList.add('show');
+  const list=$('renew-log-list');list.innerHTML='加载中...';
+  const r=await api('GET','/renew-logs');
+  if(!r||!r.ok) return (list.innerHTML='<div class="empty-text">加载失败或无权限</div>');
+  const logs=r.logs.reverse();
+  if(!logs.length) return (list.innerHTML='<div class="empty-text">暂无记录</div>');
+  list.innerHTML=logs.map(l=>{
+    const t=new Date(l.time).toLocaleString('zh-CN');
+    const d=l.days>0?'+'+l.days+'天':l.days+'天';
+    const color=l.days>0?'#27ae60':'#e74c3c';
+    return `<div class="log-item" style="border-left-color:${color}"><div class="log-time">${t}</div><div class="log-action" style="color:${color}">${d}</div><div class="log-detail">商家：${l.phone} · 操作人：${l.operator}</div></div>`;
+  }).join('');
+}
 function onSearch(){renderOrders()}
 function onNavFilter(status){$('filter-status').value=status;renderOrders();document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));event.target.closest('.nav-btn').classList.add('active')}
 let extendCode='';
