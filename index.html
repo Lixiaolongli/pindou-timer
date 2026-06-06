@@ -148,6 +148,8 @@ input::placeholder{color:#c5bdb5}
 .more-menu button{display:block;width:100%;text-align:left;padding:12px 16px;border:0;background:0;font-size:.9em;color:var(--text);cursor:pointer;font-weight:500}
 .more-menu button:hover{background:rgba(212,128,128,.04);color:var(--c1)}
 .more-menu .more-danger{color:#d9534f}
+/* 暂停营业横幅 */
+.paused-banner{background:#fff3cd;border:1px solid #ffc107;color:#856404;border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:14px;text-align:center;font-size:.9em;font-weight:500}
 /* 日志列表 */
 .log-item{padding:12px 14px;border-left:3px solid var(--c1);margin-bottom:8px;background:#fefdfa;border-radius:0 8px 8px 0;font-size:.8em}
 .log-item .log-time{color:var(--muted);font-size:.75em;margin-bottom:4px}
@@ -286,6 +288,12 @@ input::placeholder{color:#c5bdb5}
     <div class="sub" id="merchant-shop-name"></div>
   </div>
 
+  <!-- 暂停营业横幅 -->
+  <div class="paused-banner" id="paused-banner" style="display:none">
+    ⏸️ 店铺已暂停营业，顾客无法下单
+    <button class="btn btn-sm btn-primary" onclick="toggleShop()" style="margin-top:6px">恢复营业</button>
+  </div>
+
   <!-- 统计条 -->
   <div class="stat-bar" id="stat-bar">
     <div class="stat-item"><div class="stat-val" id="stat-revenue">¥0</div><div class="stat-label">今日营收</div></div>
@@ -333,6 +341,7 @@ input::placeholder{color:#c5bdb5}
     <button onclick="showRenameShop();toggleMoreMenu()">✏️ 修改店名</button>
     <button onclick="exportCSV();toggleMoreMenu()">📥 导出CSV</button>
     <button onclick="showLogs();toggleMoreMenu()">📜 操作日志</button>
+    <button onclick="toggleShop();toggleMoreMenu()" id="btn-toggle-shop">⏸️ 暂停营业</button>
     <button onclick="showChangePwd();toggleMoreMenu()">🔒 修改密码</button>
     <button class="more-danger" onclick="logout()">退出登录</button>
   </div>
@@ -476,7 +485,7 @@ input::placeholder{color:#c5bdb5}
 <script>
 const $=id=>document.getElementById(id);
 const API='/api';
-let token='',userRole='',userPhone='',currentShopId='',currentShopName='';
+let token='',userRole='',userPhone='',currentShopId='',currentShopName='',currentShopStatus='active';
 
 // ====== 工具 ======
 function toast(msg){const e=$('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2000)}
@@ -551,14 +560,14 @@ async function loadMerchants(){
   if(!ms.length) return ($('merchant-list').innerHTML='<div class="empty-text">暂无商家</div>');
   $('merchant-list').innerHTML=ms.map(m=>{
     const exp=m.expireTime?new Date(m.expireTime).toLocaleDateString('zh-CN'):'无';
-    const st=m.status==='expired'?'🔴 已到期':m.status==='disabled'?'⚫ 已禁用':'🟢 正常';
+    const st=m.status==='expired'?'🔴 已到期':m.status==='disabled'?'⚫ 已封禁':'🟢 正常';
     const isAdmin = m.role === 'admin';
     const roleName=m.role==='admin'?'管理员':'商家';
     return `<div class="merchant-item">
       <div class="merchant-info"><div class="merchant-phone">${m.phone}${m.name?' · '+m.name:''}</div><div class="merchant-meta">${st} · 到期:${exp} · 角色:${roleName}</div></div>
       <div class="merchant-actions">
         ${isAdmin ? '' : `<button class="btn btn-sm btn-outline" onclick="showRenew('${m.phone}')">续费</button>
-        <button class="btn btn-sm btn-danger" onclick="disableMerchant('${m.phone}')">禁用</button>
+        <button class="btn btn-sm btn-danger" onclick="disableMerchant('${m.phone}')">${m.status==='disabled'?'解封':'封禁'}</button>
         <button class="btn btn-sm btn-danger" onclick="deleteMerchant('${m.phone}')">删除</button>`}
       </div></div>`;
   }).join('');
@@ -599,7 +608,7 @@ async function doRenew(){
   toast('✅ 操作成功');closeDlg('dlg-renew');loadMerchants();
 }
 async function disableMerchant(phone){
-  if(!confirm('确定禁用 '+phone+'？')) return;
+  if(!confirm('确定封禁/解封 '+phone+'？')) return;
   await api('POST','/merchants',{phone,action:'disable'});loadMerchants();
 }
 async function deleteMerchant(phone){
@@ -614,16 +623,18 @@ async function showMerchant(){
   $('page-merchant').classList.add('active');
   const r=await api('GET','/shops');
   if(!r||!r.ok) return toast('加载店铺失败');
-  const shops=r.shops.filter(s=>s.status==='active');
+  const shops=r.shops.filter(s=>s.status==='active'||s.status==='paused');
   if(!shops.length){
     $('card-no-shop').style.display='block';$('card-active-orders').style.display='none';$('stat-bar').style.display='none';$('bottom-nav').style.display='none';
   }else{
     $('card-no-shop').style.display='none';$('card-active-orders').style.display='block';$('stat-bar').style.display='';$('bottom-nav').style.display='';
     currentShopId=shops[0].id;currentShopName=shops[0].name;
+    currentShopStatus=shops[0].status||'active';
     $('merchant-shop-name').textContent=currentShopName;
     sessionStorage.setItem('shopId',currentShopId);sessionStorage.setItem('shopName',currentShopName);
     await loadPackages();showStats();renderOrders();renderPackages();
     $('filter-status').value='active';
+    updateShopStatusUI();
   }
 }
 async function createShop(){
@@ -810,6 +821,21 @@ async function showLogs(){
   }).join('');
 }
 function toggleMoreMenu(){$('more-menu').classList.toggle('show')}
+async function toggleShop(){
+  const r=await api('POST','/shops',{action:'toggle'});
+  if(!r||!r.ok) return toast(r?r.error:'操作失败');
+  currentShopStatus=r.status;
+  updateShopStatusUI();
+  toast(r.status==='paused'?'⏸️ 已暂停营业':'▶️ 已恢复营业');
+}
+function updateShopStatusUI(){
+  const paused=currentShopStatus==='paused';
+  $('paused-banner').style.display=paused?'block':'none';
+  $('btn-toggle-shop').textContent=paused?'▶️ 恢复营业':'⏸️ 暂停营业';
+  // 暂停时隐藏新订单和套餐按钮
+  const btns=document.querySelectorAll('#bottom-nav .nav-btn');
+  if(btns.length>=3){btns[1].style.display=paused?'none':'';btns[2].style.display=paused?'none':'';}
+}
 function showRenameShop(){
   $('rename-shop-input').value=currentShopName||'';
   $('dlg-rename-shop').classList.add('show');

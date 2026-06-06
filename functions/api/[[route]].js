@@ -145,7 +145,7 @@ export async function onRequest(context) {
     } else if (act === 'disable') {
       const m = merchants.find(m => m.phone === phone);
       if (!m) return json({ ok: false, error: '商家不存在' }, 404);
-      m.status = 'disabled';
+      m.status = m.status === 'disabled' ? 'active' : 'disabled';
     } else if (act === 'delete') {
       merchants = merchants.filter(m => m.phone !== phone);
       const shops = JSON.parse(await env.PINDOU_KV.get('shops') || '[]');
@@ -192,6 +192,15 @@ export async function onRequest(context) {
       shops[idx].name = body.name.trim();
       await env.PINDOU_KV.put('shops', JSON.stringify(shops));
       return json({ ok: true, name: shops[idx].name });
+    }
+
+    // 暂停/恢复营业
+    if (body.action === 'toggle') {
+      const idx = shops.findIndex(s => s.ownerPhone === user.phone);
+      if (idx === -1) return json({ ok: false, error: '店铺不存在' }, 404);
+      shops[idx].status = shops[idx].status === 'active' ? 'paused' : 'active';
+      await env.PINDOU_KV.put('shops', JSON.stringify(shops));
+      return json({ ok: true, status: shops[idx].status });
     }
 
     // 创建店铺
