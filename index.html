@@ -613,14 +613,16 @@ function showQRCode(){
 async function exportCSV(){
   const r=await api('GET','/orders?shopId='+currentShopId);
   if(!r||!r.ok||!r.orders.length) return toast('暂无数据');
-  let csv='\uFEFF订单号,类型,价格,时长,状态,时间\n';
-  r.orders.forEach(o=>{csv+=`${o.code},${o.type==='double'?'双人':'单人'},${o.price},${o.minutes||'不限时'},${o.status==='active'?'进行中':'已完成'},${new Date(o.startTime).toLocaleString('zh-CN')}\n`});
+  let csv='\uFEFF订单号,类型,价格,时长(分钟),状态,开始时间,结束时间\n';
+  r.orders.forEach(o=>{
+    const start=o.startTime?new Date(o.startTime).toLocaleString('zh-CN'):'';
+    const end=o.endTime?new Date(o.endTime).toLocaleString('zh-CN'):'';
+    csv+=`${o.code},${o.type==='double'?'双人':'单人'},${o.price},${o.minutes||'不限时'},${o.status==='active'?'进行中':'已完成'},${start},${end}\n`;
+  });
   const b=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
   a.href=URL.createObjectURL(b);a.download='拼豆订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   toast('✅ 已导出');
-}
-
-// ====== 顾客端 ======
+}// ====== 顾客端 ======
 let customerTimer=null,customerOrder=null;
 async function initCustomer(){
   try{const r=await api('GET','/shops/'+currentShopId);if(r&&r.ok)$('customer-shop-name').textContent=r.shop.name}catch(e){}

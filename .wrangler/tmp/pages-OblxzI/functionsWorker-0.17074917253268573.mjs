@@ -185,7 +185,18 @@ async function onRequest(context) {
     const code = url.searchParams.get("code");
     if (!shopId) return json({ ok: false, error: "\u7F3A\u5C11shopId" }, 400);
     const raw = await env.PINDOU_KV.get("orders") || "[]";
-    let orders = JSON.parse(raw).filter((o) => o.shopId === shopId);
+    let allOrders = JSON.parse(raw);
+    const now = Date.now();
+    let changed = false;
+    for (const o of allOrders) {
+      if (o.status === "active" && o.minutes > 0 && o.startTime && now >= o.startTime + o.minutes * 6e4) {
+        o.status = "completed";
+        o.endTime = o.startTime + o.minutes * 6e4;
+        changed = true;
+      }
+    }
+    if (changed) await env.PINDOU_KV.put("orders", JSON.stringify(allOrders));
+    let orders = allOrders.filter((o) => o.shopId === shopId);
     if (code) orders = orders.filter((o) => o.code === code && o.status === "active");
     return json({ ok: true, orders });
   }
@@ -764,7 +775,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-HYzIdW/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-Q9FhM4/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -796,7 +807,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-HYzIdW/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-Q9FhM4/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

@@ -190,7 +190,18 @@ async function onRequest(context) {
     const code = url.searchParams.get("code");
     if (!shopId) return json({ ok: false, error: "\u7F3A\u5C11shopId" }, 400);
     const raw = await env.PINDOU_KV.get("orders") || "[]";
-    let orders = JSON.parse(raw).filter((o) => o.shopId === shopId);
+    let allOrders = JSON.parse(raw);
+    const now = Date.now();
+    let changed = false;
+    for (const o of allOrders) {
+      if (o.status === "active" && o.minutes > 0 && o.startTime && now >= o.startTime + o.minutes * 6e4) {
+        o.status = "completed";
+        o.endTime = o.startTime + o.minutes * 6e4;
+        changed = true;
+      }
+    }
+    if (changed) await env.PINDOU_KV.put("orders", JSON.stringify(allOrders));
+    let orders = allOrders.filter((o) => o.shopId === shopId);
     if (code) orders = orders.filter((o) => o.code === code && o.status === "active");
     return json({ ok: true, orders });
   }
