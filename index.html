@@ -115,6 +115,46 @@ input::placeholder{color:#c5bdb5}
 .motto-icon{font-size:2em;margin-bottom:6px;animation:mottoBounce 2s ease-in-out infinite}
 .motto-text{font-size:.82em;color:var(--muted);letter-spacing:2px;font-weight:400}
 @keyframes mottoBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+/* 统计条 */
+.stat-bar{display:flex;justify-content:space-around;background:linear-gradient(135deg,rgba(212,128,128,.08),rgba(232,168,124,.08));border-radius:var(--radius-sm);padding:14px 8px;margin-bottom:14px;text-align:center;border:1px solid var(--border)}
+.stat-item{flex:1}
+.stat-val{font-size:1.3em;font-weight:800;color:var(--c1)}
+.stat-label{font-size:.68em;color:var(--muted);margin-top:2px}
+/* 搜索栏 */
+.search-bar{display:flex;gap:6px;margin-bottom:12px}
+.search-bar input{flex:1;margin-top:0;padding:8px 10px;font-size:.85em}
+.search-bar select{margin-top:0;width:auto;padding:8px;font-size:.85em;flex-shrink:0}
+/* 批量完成 */
+.batch-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:0 4px}
+.batch-bar .btn-sm{padding:6px 14px;font-size:.75em}
+.batch-count{font-size:.78em;color:var(--muted)}
+/* 复选框 */
+.order-check{flex-shrink:0;margin-right:10px;width:20px;height:20px;accent-color:var(--c1);cursor:pointer}
+/* 展开/收起操作按钮 */
+.order-actions{display:none;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.order-item.expanded .order-actions{display:flex}
+.order-item.expanded .order-status-inline{display:none}
+.order-status-inline{font-weight:600;font-size:.85em;padding:4px 10px;border-radius:12px;background:#f5f2ec;flex-shrink:0}
+.order-item{cursor:pointer;user-select:none}
+.order-item .btn-sm{pointer-events:auto}
+/* 底部导航 */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:6px 0 env(safe-area-inset-bottom,10px);z-index:50;box-shadow:0 -2px 12px rgba(0,0,0,.04)}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.6em;color:var(--muted);background:0;border:0;padding:6px 10px;cursor:pointer;transition:color .15s}
+.nav-btn.active,.nav-btn:hover{color:var(--c1)}
+.nav-btn .nicon{font-size:1.5em}
+/* 更多菜单 */
+.more-menu{display:none;position:fixed;bottom:80px;right:16px;background:var(--card);border-radius:var(--radius-sm);box-shadow:0 4px 24px rgba(0,0,0,.12);padding:6px 0;z-index:60;min-width:140px;border:1px solid var(--border)}
+.more-menu.show{display:block}
+.more-menu button{display:block;width:100%;text-align:left;padding:12px 16px;border:0;background:0;font-size:.9em;color:var(--text);cursor:pointer;font-weight:500}
+.more-menu button:hover{background:rgba(212,128,128,.04);color:var(--c1)}
+.more-menu .more-danger{color:#d9534f}
+/* 日志列表 */
+.log-item{padding:12px 14px;border-left:3px solid var(--c1);margin-bottom:8px;background:#fefdfa;border-radius:0 8px 8px 0;font-size:.8em}
+.log-item .log-time{color:var(--muted);font-size:.75em;margin-bottom:4px}
+.log-item .log-action{font-weight:600;color:var(--c1);margin-bottom:2px}
+.log-item .log-detail{color:var(--text);word-break:break-all}
+/* 商家页面底部留白 */
+#page-merchant{padding-bottom:80px}
 </style>
 </head>
 <body>
@@ -152,6 +192,11 @@ input::placeholder{color:#c5bdb5}
   <div class="card" id="card-not-found" style="display:none">
     <div class="empty-text">😕 订单不存在或已结束</div>
     <button class="btn btn-outline" onclick="customerReset()">重新输入</button>
+    <button class="btn btn-outline" onclick="showHistory()" style="margin-top:6px">📋 查看历史订单</button>
+    <div class="card" id="card-history" style="display:none;margin-top:12px;background:#fefdfa">
+      <div class="card-title">历史订单</div>
+      <div id="history-list"></div>
+    </div>
   </div>
 </div>
 
@@ -238,30 +283,56 @@ input::placeholder{color:#c5bdb5}
     <h1>拼豆计时</h1>
     <div class="sub" id="merchant-shop-name"></div>
   </div>
-  <div class="admin-bar">
-    <button class="btn btn-primary" onclick="showNewOrder()">+ 新订单</button>
-    <button class="btn btn-outline" onclick="showQRCode()">📱 顾客入口</button>
-    <button class="btn btn-outline" onclick="exportCSV()">📥 导出</button>
-    <button class="btn btn-outline" onclick="showPackages()">📦 套餐</button>
-    <button class="btn btn-outline" onclick="showChangePwd()">🔒 改密</button>
-    <button class="btn btn-outline" onclick="logout()" style="color:#999">退出</button>
+
+  <!-- 统计条 -->
+  <div class="stat-bar" id="stat-bar">
+    <div class="stat-item"><div class="stat-val" id="stat-revenue">¥0</div><div class="stat-label">今日营收</div></div>
+    <div class="stat-item"><div class="stat-val" id="stat-total">0</div><div class="stat-label">今日订单</div></div>
+    <div class="stat-item"><div class="stat-val" id="stat-active">0</div><div class="stat-label">进行中</div></div>
+    <div class="stat-item"><div class="stat-val" id="stat-done">0</div><div class="stat-label">已完成</div></div>
   </div>
+
   <div class="card" id="card-no-shop" style="display:none">
     <div class="empty-text">还没有店铺</div>
     <input type="text" id="shop-name-input" placeholder="输入店铺名称">
     <button class="btn btn-primary" onclick="createShop()">创建店铺</button>
   </div>
+
+  <!-- 进行中订单 -->
   <div class="card" id="card-active-orders">
     <div class="card-title">🟢 进行中 (<span id="active-count">0</span>)</div>
+    <div class="search-bar">
+      <input type="tel" id="search-code" placeholder="🔍 搜索手机尾号" maxlength="4" inputmode="numeric" oninput="onSearch()" style="letter-spacing:2px">
+      <select id="filter-status" onchange="onSearch()"><option value="all">全部</option><option value="active" selected>进行中</option><option value="completed">已完成</option></select>
+    </div>
+    <div class="batch-bar" id="batch-bar" style="display:none">
+      <button class="btn btn-sm btn-primary" onclick="batchComplete()">批量完成(<span id="batch-count">0</span>)</button>
+      <span class="batch-count" onclick="selectAll()" style="cursor:pointer;color:var(--c1)">全选</span>
+    </div>
     <div id="active-orders">暂无订单</div>
   </div>
+
+  <!-- 已完成订单 -->
   <div class="card">
     <div class="card-title">📋 已完成</div>
     <div id="done-orders">暂无记录</div>
   </div>
-</div>
 
-<!-- ====== 新订单弹窗 ====== -->
+  <!-- 底部导航 -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-btn active" onclick="onNavFilter('all')"><span class="nicon">📋</span>订单</button>
+    <button class="nav-btn" onclick="showNewOrder()"><span class="nicon">➕</span>新订单</button>
+    <button class="nav-btn" onclick="showPackages()"><span class="nicon">📦</span>套餐</button>
+    <button class="nav-btn" onclick="showQRCode()"><span class="nicon">📱</span>入口</button>
+    <button class="nav-btn" onclick="toggleMoreMenu()"><span class="nicon">⚙️</span>更多</button>
+  </nav>
+  <div class="more-menu" id="more-menu">
+    <button onclick="exportCSV();toggleMoreMenu()">📥 导出CSV</button>
+    <button onclick="showLogs();toggleMoreMenu()">📜 操作日志</button>
+    <button onclick="showChangePwd();toggleMoreMenu()">🔒 修改密码</button>
+    <button class="more-danger" onclick="logout()">退出登录</button>
+  </div>
+</div><!-- ====== 新订单弹窗 ====== -->
 <div class="dialog-overlay" id="dlg-order"><div class="dialog">
   <h3 style="margin-bottom:16px">新订单</h3>
   <div class="package-grid" id="order-packages"></div>
@@ -368,6 +439,13 @@ input::placeholder{color:#c5bdb5}
       <button class="btn btn-primary" onclick="addPackage()" style="flex:1">添加</button>
     </div>
   </div>
+</div></div>
+
+<!-- ====== 日志弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-logs"><div class="dialog">
+  <h3 style="margin-bottom:16px">📜 操作日志</h3>
+  <div id="log-list">加载中...</div>
+  <button class="btn btn-outline" onclick="closeDlg('dlg-logs')" style="margin-top:16px">关闭</button>
 </div></div>
 
 <script>
@@ -492,13 +570,14 @@ async function showMerchant(){
   if(!r||!r.ok) return toast('加载店铺失败');
   const shops=r.shops.filter(s=>s.status==='active');
   if(!shops.length){
-    $('card-no-shop').style.display='block';$('card-active-orders').style.display='none';
+    $('card-no-shop').style.display='block';$('card-active-orders').style.display='none';$('stat-bar').style.display='none';$('bottom-nav').style.display='none';
   }else{
-    $('card-no-shop').style.display='none';$('card-active-orders').style.display='block';
+    $('card-no-shop').style.display='none';$('card-active-orders').style.display='block';$('stat-bar').style.display='';$('bottom-nav').style.display='';
     currentShopId=shops[0].id;currentShopName=shops[0].name;
     $('merchant-shop-name').textContent=currentShopName;
     sessionStorage.setItem('shopId',currentShopId);sessionStorage.setItem('shopName',currentShopName);
-    await loadPackages();renderOrders();renderPackages();
+    await loadPackages();showStats();renderOrders();renderPackages();
+    $('filter-status').value='active';
   }
 }
 async function createShop(){
@@ -558,12 +637,28 @@ async function createOrder(){
 }
 
 async function renderOrders(){
-  const r=await api('GET','/orders?shopId='+currentShopId);
+  const search=$('search-code')?$('search-code').value.trim():'';
+  const status=$('filter-status')?$('filter-status').value:'active';
+  let url='/orders?shopId='+currentShopId;
+  if(search) url+='&search='+search;
+  if(status!=='all') url+='&status='+status;
+  const r=await api('GET',url);
   const orders=r&&r.ok?r.orders:[];
   const active=orders.filter(o=>o.status==='active'),done=orders.filter(o=>o.status!=='active');
   $('active-count').textContent=active.length;
+  const now=Date.now();
+  active.sort((a,b)=>{
+    const rA=a.minutes>0?Math.max(0,a.startTime+a.minutes*60000-now):999999999;
+    const rB=b.minutes>0?Math.max(0,b.startTime+b.minutes*60000-now):999999999;
+    return rA-rB;
+  });
+  const hasExpired=active.some(o=>o.minutes>0&&now>=o.startTime+o.minutes*60000);
+  if(hasExpired) playBeep();
   $('active-orders').innerHTML=active.length?active.map(o=>renderOrderItem(o,true)).join(''):'<div class="empty-text">暂无进行中的订单</div>';
-  $('done-orders').innerHTML=done.length?done.slice(0,20).map(o=>renderOrderItem(o,false)).join(''):'<div class="empty-text">暂无记录</div>';
+  if(status==='all'||status==='completed'){
+    $('done-orders').innerHTML=done.length?done.slice(0,20).map(o=>renderOrderItem(o,false)).join(''):'<div class="empty-text">暂无记录</div>';
+  }
+  updateBatchBar();
 }
 function renderOrderItem(o,isActive){
   if(isActive){
@@ -571,17 +666,19 @@ function renderOrderItem(o,isActive){
     const remain=endAt?Math.max(0,Math.ceil((endAt-Date.now())/1000)):null;
     const rs=remain===null?'不限时♾️':remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0');
     const expired=endAt&&Date.now()>=endAt;
-    return `<div class="order-item"><div class="order-left">
-      <div class="order-code">${o.code}</div>
-      <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
-      <div class="order-time">${rs}</div></div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <span class="order-status ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
-      <button class="btn btn-sm btn-danger" onclick="completeOrder('${o.code}')">完成</button>
-      ${o.minutes>0?`<button class="btn btn-sm btn-primary" onclick="showExtend('${o.code}')">续时</button>`:''}
+    return `<div class="order-item" onclick="toggleOrderExpand(event,'${o.code}')">
+      <input type="checkbox" class="order-check" id="chk-${o.code}" onclick="event.stopPropagation();onCheck()">
+      <div class="order-left">
+        <div class="order-code">${o.code}</div>
+        <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
+        <div class="order-time">${rs}</div></div>
+      <span class="order-status-inline ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
+      <div class="order-actions">
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();completeOrder('${o.code}')">完成</button>
+        ${o.minutes>0?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();showExtend('${o.code}')">续时</button>`:''}
       </div></div>`;
   }else{
-    const doneTime=new Date(o.doneTime||o.createTime).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+    const doneTime=new Date(o.endTime||o.createTime).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
     return `<div class="order-item"><div class="order-left">
       <div class="order-code">${o.code}</div>
       <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
@@ -589,12 +686,69 @@ function renderOrderItem(o,isActive){
       <span class="order-status status-done">✅完成</span>
     </div>`;
   }
-}
-
+  }
 async function completeOrder(code){
   if(!confirm('确定完成手机尾号 '+code+'？')) return;
-  await api('POST','/orders/complete',{shopId:currentShopId,code});renderOrders();
+  await api('POST','/orders/complete',{shopId:currentShopId,code});renderOrders();showStats();
 }
+function onCheck(){updateBatchBar()}
+function updateBatchBar(){
+  const checks=document.querySelectorAll('#active-orders .order-check:checked');
+  const bar=$('batch-bar'),cnt=$('batch-count');
+  if(checks.length){bar.style.display='flex';cnt.textContent=checks.length}else{bar.style.display='none'}
+}
+function selectAll(){
+  const all=document.querySelectorAll('#active-orders .order-check');
+  const checked=document.querySelectorAll('#active-orders .order-check:checked');
+  const select=checked.length<all.length;
+  all.forEach(c=>c.checked=select);updateBatchBar();
+}
+async function batchComplete(){
+  const checks=document.querySelectorAll('#active-orders .order-check:checked');
+  const codes=Array.from(checks).map(c=>c.id.replace('chk-',''));
+  if(!codes.length) return toast('请勾选订单');
+  if(!confirm(`确定完成 ${codes.length} 个订单？`)) return;
+  const r=await api('POST','/orders/batch-complete',{shopId:currentShopId,codes});
+  if(!r||!r.ok) return toast(r?r.error:'操作失败');
+  toast('✅ 已完成 '+r.count+' 个订单');renderOrders();showStats();
+}
+function toggleOrderExpand(e,code){
+  const el=e.currentTarget;el.classList.toggle('expanded');
+  sessionStorage.setItem('expand_'+code,el.classList.contains('expanded')?'1':'');
+}
+function playBeep(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.type='square';osc.frequency.value=800;gain.gain.value=.08;
+    osc.start();osc.stop(ctx.currentTime+.15);
+    setTimeout(()=>{const o2=ctx.createOscillator(),g2=ctx.createGain();o2.connect(g2);g2.connect(ctx.destination);o2.type='square';o2.frequency.value=600;g2.gain.value=.08;o2.start();o2.stop(ctx.currentTime+.15)},200);
+  }catch(e){}
+}
+async function showStats(){
+  const r=await api('GET','/stats?shopId='+currentShopId);
+  if(r&&r.ok&&r.stats){
+    const s=r.stats;
+    $('stat-revenue').textContent='¥'+s.todayRevenue;
+    $('stat-total').textContent=s.todayTotal;
+    $('stat-active').textContent=s.todayActive;
+    $('stat-done').textContent=s.todayCompleted;
+  }
+}
+async function showLogs(){
+  $('dlg-logs').classList.add('show');
+  const logList=$('log-list');logList.innerHTML='加载中...';
+  const r=await api('GET','/logs?shopId='+currentShopId);
+  if(!r||!r.ok) return (logList.innerHTML='<div class="empty-text">加载失败</div>');
+  const logs=r.logs.reverse();
+  if(!logs.length) return (logList.innerHTML='<div class="empty-text">暂无日志</div>');
+  const typeMap={create:'➕ 下单',complete:'✅ 完成',extend:'⏱ 续时'};
+  logList.innerHTML=logs.map(l=>`<div class="log-item"><div class="log-time">${new Date(l.time).toLocaleString('zh-CN')}</div><div class="log-action">${typeMap[l.type]||l.type}</div><div class="log-detail">${l.detail?JSON.stringify(l.detail):''}</div></div>`).join('');
+}
+function toggleMoreMenu(){$('more-menu').classList.toggle('show')}
+function onSearch(){renderOrders()}
+function onNavFilter(status){$('filter-status').value=status;renderOrders();document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));event.target.closest('.nav-btn').classList.add('active')}
 let extendCode='';
 function showExtend(code){extendCode=code;$('extend-info').textContent='手机尾号: '+code;$('dlg-extend').classList.add('show')}
 async function doExtend(){
@@ -609,6 +763,7 @@ function showQRCode(){
   const url=location.origin+location.pathname+'?shopId='+currentShopId;
   const qrImg=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=212-128-128&data=${encodeURIComponent(url)}`;
   $('qr-content').innerHTML=`<img src="${qrImg}" alt="二维码" onerror="this.onerror=null;this.nextSibling.style.display='block';this.style.display='none'"><div style="display:none;font-family:monospace;font-size:.7em;color:#999;word-break:break-all;margin-top:8px">${url}</div><p style="margin-top:8px;color:#d48080;font-weight:600">📱 顾客扫码输入手机后4位查看计时</p>`;
+  toggleMoreMenu();
 }
 async function exportCSV(){
   const r=await api('GET','/orders?shopId='+currentShopId);
@@ -658,11 +813,24 @@ async function checkCustomerStatus(){
   const r=await api('GET','/orders/lookup?shopId='+currentShopId+'&code='+(customerOrder?customerOrder.code:''));
   if(!r||!r.ok){if(customerTimer)clearInterval(customerTimer);customerReset()}
 }
-function customerReset(){$('card-code').style.display='block';$('card-timer').style.display='none';$('card-not-found').style.display='none';if(customerTimer)clearInterval(customerTimer);$('input-code').value='';customerOrder=null;$('input-code').focus()}
+function customerReset(){$('card-code').style.display='block';$('card-timer').style.display='none';$('card-not-found').style.display='none';$('card-history').style.display='none';if(customerTimer)clearInterval(customerTimer);$('input-code').value='';customerOrder=null;$('input-code').focus()}
+async function showHistory(){
+  const code=$('input-code').value.trim();
+  if(!code) return toast('请先输入手机尾号');
+  const r=await api('GET','/orders/history?shopId='+currentShopId+'&code='+code);
+  const card=$('card-history'),list=$('history-list');
+  if(!r||!r.ok||!r.orders.length){card.style.display='block';list.innerHTML='<div class="empty-text">暂无历史订单</div>';return}
+  card.style.display='block';
+  list.innerHTML=r.orders.reverse().map(o=>{
+    const st=o.status==='active'?'🟢进行中':'✅已完成';
+    const t=new Date(o.startTime).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="order-item"><div class="order-left"><div class="order-code">${o.code}</div><div class="order-name">${o.type==='double'?'双人':'单人'} · ¥${o.price} · ${o.minutes||'不限时'}分钟</div><div class="order-time">${t} · ${st}</div></div></div>`;
+  }).join('');
+}
 
 // ====== 自动刷新 ======
 let refreshBusy=false;
-setInterval(async()=>{if(refreshBusy||!currentShopId||!$('page-merchant').classList.contains('active'))return;refreshBusy=true;await renderOrders();refreshBusy=false},3000);
+setInterval(async()=>{if(refreshBusy||!currentShopId||!$('page-merchant').classList.contains('active'))return;refreshBusy=true;await renderOrders();showStats();refreshBusy=false},5000);
 
 // ====== 启动 ======
 route();

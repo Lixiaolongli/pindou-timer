@@ -34,6 +34,15 @@ function json(data, status = 200) {
 }
 __name(json, "json");
 __name2(json, "json");
+async function addLog(env, type, detail) {
+  const raw = await env.PINDOU_KV.get("logs") || "[]";
+  const logs = JSON.parse(raw);
+  logs.push({ type, detail, time: Date.now() });
+  if (logs.length > 5e3) logs.splice(0, logs.length - 5e3);
+  await env.PINDOU_KV.put("logs", JSON.stringify(logs));
+}
+__name(addLog, "addLog");
+__name2(addLog, "addLog");
 async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -188,6 +197,8 @@ async function onRequest(context) {
   if (path === "/api/orders" && request.method === "GET") {
     const shopId = url.searchParams.get("shopId");
     const code = url.searchParams.get("code");
+    const status = url.searchParams.get("status");
+    const search = url.searchParams.get("search");
     if (!shopId) return json({ ok: false, error: "\u7F3A\u5C11shopId" }, 400);
     const raw = await env.PINDOU_KV.get("orders") || "[]";
     let allOrders = JSON.parse(raw);
@@ -203,6 +214,8 @@ async function onRequest(context) {
     if (changed) await env.PINDOU_KV.put("orders", JSON.stringify(allOrders));
     let orders = allOrders.filter((o) => o.shopId === shopId);
     if (code) orders = orders.filter((o) => o.code === code && o.status === "active");
+    if (status && status !== "all") orders = orders.filter((o) => o.status === status);
+    if (search) orders = orders.filter((o) => o.code.includes(search));
     return json({ ok: true, orders });
   }
   if (path === "/api/orders" && request.method === "POST") {
@@ -228,7 +241,30 @@ async function onRequest(context) {
     };
     orders.push(order);
     await env.PINDOU_KV.put("orders", JSON.stringify(orders));
+    await addLog(env, "create", { phone: user.phone, shopId, code, type: order.type, price: order.price, minutes: order.minutes });
     return json({ ok: true, order });
+  }
+  if (path === "/api/orders/batch-complete" && request.method === "POST") {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: "\u672A\u767B\u5F55" }, 401);
+    const body = await request.json();
+    const { shopId, codes } = body;
+    if (!shopId || !codes || !codes.length) return json({ ok: false, error: "\u7F3A\u5C11\u53C2\u6570" }, 400);
+    const raw = await env.PINDOU_KV.get("orders") || "[]";
+    let orders = JSON.parse(raw);
+    let count = 0;
+    const now = Date.now();
+    for (const code of codes) {
+      const idx = orders.findIndex((o) => o.shopId === shopId && o.code === code && o.status === "active");
+      if (idx !== -1) {
+        orders[idx].status = "completed";
+        orders[idx].endTime = now;
+        count++;
+        await addLog(env, "complete", { phone: user.phone, shopId, code });
+      }
+    }
+    await env.PINDOU_KV.put("orders", JSON.stringify(orders));
+    return json({ ok: true, count });
   }
   if (path === "/api/orders/complete" && request.method === "POST") {
     const user = await auth(request, env);
@@ -242,6 +278,7 @@ async function onRequest(context) {
     orders[idx].status = "completed";
     orders[idx].endTime = Date.now();
     await env.PINDOU_KV.put("orders", JSON.stringify(orders));
+    await addLog(env, "complete", { phone: user.phone, shopId, code });
     return json({ ok: true });
   }
   if (path === "/api/orders/extend" && request.method === "POST") {
@@ -257,6 +294,7 @@ async function onRequest(context) {
     else order.minutes += Number(minutes) || 0;
     order.price += Number(price) || 0;
     await env.PINDOU_KV.put("orders", JSON.stringify(orders));
+    await addLog(env, "extend", { phone: user.phone, shopId, code, minutes, price });
     return json({ ok: true, order });
   }
   if (path === "/api/orders/remove" && request.method === "POST") {
@@ -269,6 +307,37 @@ async function onRequest(context) {
     await env.PINDOU_KV.put("orders", JSON.stringify(orders));
     return json({ ok: true });
   }
+  if (path === "/api/logs" && request.method === "GET") {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: "\u672A\u767B\u5F55" }, 401);
+    const raw = await env.PINDOU_KV.get("logs") || "[]";
+    const logs = JSON.parse(raw);
+    const shopId = url.searchParams.get("shopId");
+    if (shopId) return json({ ok: true, logs: logs.filter((l) => l.detail && l.detail.shopId === shopId).slice(-200) });
+    return json({ ok: true, logs: logs.slice(-200) });
+  }
+  if (path === "/api/stats" && request.method === "GET") {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: "\u672A\u767B\u5F55" }, 401);
+    const shopId = url.searchParams.get("shopId");
+    if (!shopId) return json({ ok: false, error: "\u7F3A\u5C11shopId" }, 400);
+    const raw = await env.PINDOU_KV.get("orders") || "[]";
+    const today = /* @__PURE__ */ new Date();
+    today.setHours(0, 0, 0, 0);
+    const t0 = today.getTime();
+    const orders = JSON.parse(raw).filter((o) => o.shopId === shopId);
+    const todayOrders = orders.filter((o) => o.startTime >= t0);
+    const todayCompleted = todayOrders.filter((o) => o.status === "completed");
+    const todayActive = todayOrders.filter((o) => o.status === "active");
+    const revenue = todayCompleted.reduce((s, o) => s + (o.price || 0), 0) + todayActive.reduce((s, o) => s + (o.price || 0), 0);
+    return json({ ok: true, stats: {
+      todayTotal: todayOrders.length,
+      todayActive: todayActive.length,
+      todayCompleted: todayCompleted.length,
+      todayRevenue: Math.round(revenue * 100) / 100,
+      totalOrders: orders.length
+    } });
+  }
   if (path === "/api/orders/lookup") {
     const shopId = url.searchParams.get("shopId");
     const code = url.searchParams.get("code");
@@ -277,6 +346,14 @@ async function onRequest(context) {
     const order = JSON.parse(raw).find((o) => o.shopId === shopId && o.code === code && o.status === "active");
     if (!order) return json({ ok: false, error: "\u8BA2\u5355\u4E0D\u5B58\u5728\u6216\u5DF2\u7ED3\u675F" }, 404);
     return json({ ok: true, order });
+  }
+  if (path === "/api/orders/history" && request.method === "GET") {
+    const shopId = url.searchParams.get("shopId");
+    const code = url.searchParams.get("code");
+    if (!shopId || !code) return json({ ok: false, error: "\u7F3A\u5C11\u53C2\u6570" }, 400);
+    const raw = await env.PINDOU_KV.get("orders") || "[]";
+    const orders = JSON.parse(raw).filter((o) => o.shopId === shopId && o.code === code);
+    return json({ ok: true, orders });
   }
   return json({ error: "Not found" }, 404);
 }

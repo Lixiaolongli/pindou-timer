@@ -27,6 +27,14 @@ function json(data, status = 200) {
   });
 }
 
+async function addLog(env, type, detail) {
+  const raw = await env.PINDOU_KV.get('logs') || '[]';
+  const logs = JSON.parse(raw);
+  logs.push({ type, detail, time: Date.now() });
+  if (logs.length > 5000) logs.splice(0, logs.length - 5000);
+  await env.PINDOU_KV.put('logs', JSON.stringify(logs));
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -199,6 +207,8 @@ export async function onRequest(context) {
   if (path === '/api/orders' && request.method === 'GET') {
     const shopId = url.searchParams.get('shopId');
     const code = url.searchParams.get('code');
+    const status = url.searchParams.get('status'); // active|completed|all
+    const search = url.searchParams.get('search'); // 手机尾号搜索
     if (!shopId) return json({ ok: false, error: '缺少shopId' }, 400);
     const raw = await env.PINDOU_KV.get('orders') || '[]';
     let allOrders = JSON.parse(raw);
@@ -214,6 +224,8 @@ export async function onRequest(context) {
     if (changed) await env.PINDOU_KV.put('orders', JSON.stringify(allOrders));
     let orders = allOrders.filter(o => o.shopId === shopId);
     if (code) orders = orders.filter(o => o.code === code && o.status === 'active');
+    if (status && status !== 'all') orders = orders.filter(o => o.status === status);
+    if (search) orders = orders.filter(o => o.code.includes(search));
     return json({ ok: true, orders });
   }
   // ============ 创建订单 ============
@@ -239,7 +251,32 @@ export async function onRequest(context) {
     };
     orders.push(order);
     await env.PINDOU_KV.put('orders', JSON.stringify(orders));
+    await addLog(env, 'create', { phone: user.phone, shopId, code, type: order.type, price: order.price, minutes: order.minutes });
     return json({ ok: true, order });
+  }
+
+  // ============ 批量完成订单 ============
+  if (path === '/api/orders/batch-complete' && request.method === 'POST') {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: '未登录' }, 401);
+    const body = await request.json();
+    const { shopId, codes } = body;
+    if (!shopId || !codes || !codes.length) return json({ ok: false, error: '缺少参数' }, 400);
+    const raw = await env.PINDOU_KV.get('orders') || '[]';
+    let orders = JSON.parse(raw);
+    let count = 0;
+    const now = Date.now();
+    for (const code of codes) {
+      const idx = orders.findIndex(o => o.shopId === shopId && o.code === code && o.status === 'active');
+      if (idx !== -1) {
+        orders[idx].status = 'completed';
+        orders[idx].endTime = now;
+        count++;
+        await addLog(env, 'complete', { phone: user.phone, shopId, code });
+      }
+    }
+    await env.PINDOU_KV.put('orders', JSON.stringify(orders));
+    return json({ ok: true, count });
   }
 
   // ============ 完成订单 ============
@@ -255,6 +292,7 @@ export async function onRequest(context) {
     orders[idx].status = 'completed';
     orders[idx].endTime = Date.now();
     await env.PINDOU_KV.put('orders', JSON.stringify(orders));
+    await addLog(env, 'complete', { phone: user.phone, shopId, code });
     return json({ ok: true });
   }
 
@@ -272,6 +310,7 @@ export async function onRequest(context) {
     else order.minutes += (Number(minutes) || 0);
     order.price += (Number(price) || 0);
     await env.PINDOU_KV.put('orders', JSON.stringify(orders));
+    await addLog(env, 'extend', { phone: user.phone, shopId, code, minutes, price });
     return json({ ok: true, order });
   }
 
@@ -287,6 +326,42 @@ export async function onRequest(context) {
     return json({ ok: true });
   }
 
+  // ============ 操作日志 ============
+  if (path === '/api/logs' && request.method === 'GET') {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: '未登录' }, 401);
+    const raw = await env.PINDOU_KV.get('logs') || '[]';
+    const logs = JSON.parse(raw);
+    const shopId = url.searchParams.get('shopId');
+    if (shopId) return json({ ok: true, logs: logs.filter(l => l.detail && l.detail.shopId === shopId).slice(-200) });
+    return json({ ok: true, logs: logs.slice(-200) });
+  }
+
+  // ============ 今日营收统计 ============
+  if (path === '/api/stats' && request.method === 'GET') {
+    const user = await auth(request, env);
+    if (!user) return json({ ok: false, error: '未登录' }, 401);
+    const shopId = url.searchParams.get('shopId');
+    if (!shopId) return json({ ok: false, error: '缺少shopId' }, 400);
+    const raw = await env.PINDOU_KV.get('orders') || '[]';
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const t0 = today.getTime();
+    const orders = JSON.parse(raw).filter(o => o.shopId === shopId);
+    const todayOrders = orders.filter(o => o.startTime >= t0);
+    const todayCompleted = todayOrders.filter(o => o.status === 'completed');
+    const todayActive = todayOrders.filter(o => o.status === 'active');
+    const revenue = todayCompleted.reduce((s,o) => s + (o.price||0), 0)
+                   + todayActive.reduce((s,o) => s + (o.price||0), 0);
+    return json({ ok: true, stats: {
+      todayTotal: todayOrders.length,
+      todayActive: todayActive.length,
+      todayCompleted: todayCompleted.length,
+      todayRevenue: Math.round(revenue * 100) / 100,
+      totalOrders: orders.length,
+    }});
+  }
+
   // ============ 顾客查订单（公开） ============
   if (path === '/api/orders/lookup') {
     const shopId = url.searchParams.get('shopId');
@@ -296,6 +371,16 @@ export async function onRequest(context) {
     const order = JSON.parse(raw).find(o => o.shopId === shopId && o.code === code && o.status === 'active');
     if (!order) return json({ ok: false, error: '订单不存在或已结束' }, 404);
     return json({ ok: true, order });
+  }
+
+  // ============ 顾客历史订单 ============
+  if (path === '/api/orders/history' && request.method === 'GET') {
+    const shopId = url.searchParams.get('shopId');
+    const code = url.searchParams.get('code');
+    if (!shopId || !code) return json({ ok: false, error: '缺少参数' }, 400);
+    const raw = await env.PINDOU_KV.get('orders') || '[]';
+    const orders = JSON.parse(raw).filter(o => o.shopId === shopId && o.code === code);
+    return json({ ok: true, orders });
   }
 
   return json({ error: 'Not found' }, 404);
