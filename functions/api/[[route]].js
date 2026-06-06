@@ -130,7 +130,7 @@ export async function onRequest(context) {
       if (!m) return json({ ok: false, error: '商家不存在' }, 404);
       const d = parseInt(days) || 30;
       m.status = 'active';
-      m.expireTime = Math.max(m.expireTime || Date.now(), Date.now()) + d * 86400000;
+      m.expireTime = Math.max(Date.now() + 86400000, (m.expireTime || Date.now()) + d * 86400000);
     } else if (act === 'disable') {
       const m = merchants.find(m => m.phone === phone);
       if (!m) return json({ ok: false, error: '商家不存在' }, 404);

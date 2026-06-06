@@ -123,7 +123,7 @@ async function onRequest(context) {
       if (!m) return json({ ok: false, error: "\u5546\u5BB6\u4E0D\u5B58\u5728" }, 404);
       const d = parseInt(days) || 30;
       m.status = "active";
-      m.expireTime = Math.max(m.expireTime || Date.now(), Date.now()) + d * 864e5;
+      m.expireTime = Math.max(Date.now() + 864e5, (m.expireTime || Date.now()) + d * 864e5);
     } else if (act === "disable") {
       const m = merchants.find((m2) => m2.phone === phone);
       if (!m) return json({ ok: false, error: "\u5546\u5BB6\u4E0D\u5B58\u5728" }, 404);
@@ -851,7 +851,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-WZWAhV/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-IrQoe3/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -883,7 +883,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-WZWAhV/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-IrQoe3/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

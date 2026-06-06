@@ -129,7 +129,7 @@ async function onRequest(context) {
       if (!m) return json({ ok: false, error: "\u5546\u5BB6\u4E0D\u5B58\u5728" }, 404);
       const d = parseInt(days) || 30;
       m.status = "active";
-      m.expireTime = Math.max(m.expireTime || Date.now(), Date.now()) + d * 864e5;
+      m.expireTime = Math.max(Date.now() + 864e5, (m.expireTime || Date.now()) + d * 864e5);
     } else if (act === "disable") {
       const m = merchants.find((m2) => m2.phone === phone);
       if (!m) return json({ ok: false, error: "\u5546\u5BB6\u4E0D\u5B58\u5728" }, 404);

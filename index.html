@@ -385,10 +385,14 @@ input::placeholder{color:#c5bdb5}
   </div>
 </div></div>
 
-<!-- ====== 续费弹窗 ====== -->
+<!-- ====== 天数管理弹窗 ====== -->
 <div class="dialog-overlay" id="dlg-renew"><div class="dialog">
-  <h3 style="margin-bottom:16px">续费</h3>
+  <h3 style="margin-bottom:16px">天数管理</h3>
   <p style="color:#999;font-size:.85em;margin-bottom:12px" id="renew-info"></p>
+  <div style="display:flex;gap:6px;margin-bottom:14px">
+    <button class="btn btn-sm" id="renew-mode-add" onclick="setRenewMode('add')" style="flex:1;background:var(--c1);color:#fff">➕ 增加天数</button>
+    <button class="btn btn-sm" id="renew-mode-sub" onclick="setRenewMode('sub')" style="flex:1">➖ 减少天数</button>
+  </div>
   <label>选择天数</label>
   <div class="package-grid" style="margin-bottom:12px">
     <div class="package-btn" onclick="pickRenew(7)"><div class="pkg-name">7天</div></div>
@@ -402,7 +406,7 @@ input::placeholder{color:#c5bdb5}
   <input type="number" id="renew-days" value="30" min="1">
   <div style="display:flex;gap:10px;margin-top:16px">
     <button class="btn btn-outline" onclick="closeDlg('dlg-renew')" style="flex:1">取消</button>
-    <button class="btn btn-primary" onclick="doRenew()" style="flex:1">确认续费</button>
+    <button class="btn btn-primary" id="renew-confirm-btn" onclick="doRenew()" style="flex:1">确认增加</button>
   </div>
 </div></div>
 
@@ -543,14 +547,32 @@ async function doAddMerchant(){
   if(!r||!r.ok) return toast(r?r.error:'添加失败');
   toast('✅ 添加成功');closeDlg('dlg-merchant');loadMerchants();
 }
-let renewPhone='';
-function showRenew(phone){renewPhone=phone;$('renew-info').textContent='商家: '+phone;$('dlg-renew').classList.add('show');$('renew-days').value=30}
+let renewPhone='',renewMode='add';
+function setRenewMode(m){
+  renewMode=m;
+  $('renew-mode-add').style.background=m==='add'?'var(--c1)':'var(--bg)';
+  $('renew-mode-add').style.color=m==='add'?'#fff':'var(--text)';
+  $('renew-mode-sub').style.background=m==='sub'?'#e74c3c':'var(--bg)';
+  $('renew-mode-sub').style.color=m==='sub'?'#fff':'var(--text)';
+  $('renew-confirm-btn').textContent=m==='add'?'确认增加':'确认减少';
+}
+function showRenew(phone){
+  renewPhone=phone;renewMode='add';
+  $('renew-info').textContent='商家: '+phone;
+  $('dlg-renew').classList.add('show');
+  $('renew-days').value=30;
+  setRenewMode('add');
+}
 function pickRenew(d){$('renew-days').value=d}
 async function doRenew(){
   const days=parseInt($('renew-days').value)||30;
-  const r=await api('POST','/merchants',{phone:renewPhone,days,action:'renew'});
-  if(!r||!r.ok) return toast(r?r.error:'续费失败');
-  toast('✅ 续费成功');closeDlg('dlg-renew');loadMerchants();
+  if(renewMode==='sub'){
+    if(!confirm(`⚠️ 确认减少 ${renewPhone} 的天数？\n\n将减少 ${days} 天有效期。此操作不可撤销！\n\n确定继续吗？`)) return;
+    if(!confirm('再次确认：真的要减少 '+days+' 天吗？')) return;
+  }
+  const r=await api('POST','/merchants',{phone:renewPhone,days:renewMode==='sub'?-days:days,action:'renew'});
+  if(!r||!r.ok) return toast(r?r.error:'操作失败');
+  toast('✅ 操作成功');closeDlg('dlg-renew');loadMerchants();
 }
 async function disableMerchant(phone){
   if(!confirm('确定禁用 '+phone+'？')) return;
