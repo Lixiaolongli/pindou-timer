@@ -794,7 +794,20 @@ async function showLogs(){
   const logs=r.logs.reverse();
   if(!logs.length) return (logList.innerHTML='<div class="empty-text">暂无日志</div>');
   const typeMap={create:'➕ 下单',complete:'✅ 完成',extend:'⏱ 续时'};
-  logList.innerHTML=logs.map(l=>`<div class="log-item"><div class="log-time">${new Date(l.time).toLocaleString('zh-CN')}</div><div class="log-action">${typeMap[l.type]||l.type}</div><div class="log-detail">${l.detail?JSON.stringify(l.detail):''}</div></div>`).join('');
+  logList.innerHTML=logs.map(l=>{
+    const d = l.detail || {};
+    let detail = '';
+    if(l.type==='create'){
+      detail = `尾号${d.code} · ${d.type==='double'?'👥双人':'👤单人'} · ¥${d.price} · ${d.minutes>0?d.minutes+'分钟':'不限时'}`;
+    }else if(l.type==='extend'){
+      detail = `尾号${d.code} · +${d.minutes}分钟 · +¥${d.price}`;
+    }else if(l.type==='complete'){
+      detail = `尾号${d.code}`;
+    }else{
+      detail = JSON.stringify(d);
+    }
+    return `<div class="log-item"><div class="log-time">${new Date(l.time).toLocaleString('zh-CN')}</div><div class="log-action">${typeMap[l.type]||l.type}</div><div class="log-detail">${detail}</div></div>`;
+  }).join('');
 }
 function toggleMoreMenu(){$('more-menu').classList.toggle('show')}
 function showRenameShop(){
