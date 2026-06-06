@@ -142,6 +142,14 @@ async function onRequest(context) {
       m.status = "disabled";
     } else if (act === "delete") {
       merchants = merchants.filter((m) => m.phone !== phone);
+      const shops = JSON.parse(await env.PINDOU_KV.get("shops") || "[]");
+      const deletedShops = shops.filter((s) => s.ownerPhone === phone);
+      const keptShops = shops.filter((s) => s.ownerPhone !== phone);
+      const orders = JSON.parse(await env.PINDOU_KV.get("orders") || "[]");
+      const deletedShopIds = new Set(deletedShops.map((s) => s.id));
+      const keptOrders = orders.filter((o) => !deletedShopIds.has(o.shopId));
+      await env.PINDOU_KV.put("shops", JSON.stringify(keptShops));
+      await env.PINDOU_KV.put("orders", JSON.stringify(keptOrders));
     } else {
       return json({ ok: false, error: "\u65E0\u6548\u64CD\u4F5C" }, 400);
     }
@@ -874,7 +882,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-WzZf9m/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-ZW4Gxh/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -906,7 +914,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-WzZf9m/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-ZW4Gxh/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

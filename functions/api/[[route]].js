@@ -148,6 +148,14 @@ export async function onRequest(context) {
       m.status = 'disabled';
     } else if (act === 'delete') {
       merchants = merchants.filter(m => m.phone !== phone);
+      const shops = JSON.parse(await env.PINDOU_KV.get('shops') || '[]');
+      const deletedShops = shops.filter(s => s.ownerPhone === phone);
+      const keptShops = shops.filter(s => s.ownerPhone !== phone);
+      const orders = JSON.parse(await env.PINDOU_KV.get('orders') || '[]');
+      const deletedShopIds = new Set(deletedShops.map(s => s.id));
+      const keptOrders = orders.filter(o => !deletedShopIds.has(o.shopId));
+      await env.PINDOU_KV.put('shops', JSON.stringify(keptShops));
+      await env.PINDOU_KV.put('orders', JSON.stringify(keptOrders));
     } else {
       return json({ ok: false, error: '无效操作' }, 400);
     }
