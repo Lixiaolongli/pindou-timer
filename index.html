@@ -992,9 +992,19 @@ async function initCustomer(){
     }
   }catch(e){}
 }
+async function refreshNote(){
+  try{
+    const r=await api('GET','/shops/'+currentShopId);
+    if(r&&r.ok){
+      if(r.shop.note){$('timer-note').textContent=r.shop.note;$('timer-note').style.display='block'}
+      else{$('timer-note').style.display='none'}
+    }
+  }catch(e){}
+}
 async function customerLookup(){
   const code=$('input-code').value.trim();
   if(!/^\d{4}$/.test(code)) return toast('请输入4位手机尾号');
+  refreshNote();
   const r=await api('GET','/orders/lookup?shopId='+currentShopId+'&code='+code);
   if(!r||!r.ok) return ($('card-code').style.display='none',$('card-timer').style.display='none',$('card-not-found').style.display='block');
   customerOrder=r.order;$('card-code').style.display='none';$('card-not-found').style.display='none';$('card-timer').style.display='block';
