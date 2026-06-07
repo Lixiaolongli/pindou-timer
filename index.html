@@ -188,6 +188,7 @@ input::placeholder{color:#c5bdb5}
     <div style="text-align:center"><span class="code-badge" id="timer-code-badge"></span></div>
     <div class="timer-display" id="timer-display"></div>
     <div style="text-align:center;color:#999;font-size:.85em" id="timer-info"></div>
+    <div id="timer-note" style="display:none;text-align:center;background:#fef9f0;border:1px solid #f0e0c0;border-radius:10px;padding:12px 16px;margin-top:10px;color:#8a6d3b;font-size:.82em;line-height:1.6;white-space:pre-wrap"></div>
     <button class="btn btn-outline" onclick="customerReset()">查看其他订单</button>
   </div>
   <div class="card" id="card-not-found" style="display:none">
@@ -338,6 +339,7 @@ input::placeholder{color:#c5bdb5}
   <div class="more-menu" id="more-menu">
     <button onclick="showVipInfo();toggleMoreMenu()">💎 VIP天数</button>
     <button onclick="showRenameShop();toggleMoreMenu()">✏️ 修改店名</button>
+    <button onclick="showNote();toggleMoreMenu()">📝 备注</button>
     <button onclick="exportCSV();toggleMoreMenu()">📥 导出CSV</button>
     <button onclick="showLogs();toggleMoreMenu()">📜 操作日志</button>
     <button onclick="toggleShop();toggleMoreMenu()" id="btn-toggle-shop">⏸️ 暂停营业</button>
@@ -499,10 +501,21 @@ input::placeholder{color:#c5bdb5}
   </div>
 </div></div>
 
+<!-- ====== 店铺备注弹窗 ====== -->
+<div class="dialog-overlay" id="dlg-note"><div class="dialog">
+  <h3 style="margin-bottom:16px">📝 店铺备注</h3>
+  <p style="color:var(--muted);font-size:.8em;margin-bottom:10px">顾客扫码后可见，可用于说明计时规则、超时费用等</p>
+  <textarea id="note-input" rows="4" placeholder="例如：超时10分钟内免费，超10分钟加收10元" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.95em;resize:vertical;font-family:inherit"></textarea>
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn btn-outline" onclick="closeDlg('dlg-note')" style="flex:1">取消</button>
+    <button class="btn btn-primary" onclick="doSaveNote()" style="flex:1">保存</button>
+  </div>
+</div></div>
+
 <script>
 const $=id=>document.getElementById(id);
 const API='/api';
-let token='',userRole='',userPhone='',currentShopId='',currentShopName='',currentShopStatus='active';
+let token='',userRole='',userPhone='',currentShopId='',currentShopName='',currentShopNote='',currentShopStatus='active';
 
 // ====== 工具 ======
 function toast(msg){const e=$('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2000)}
@@ -647,10 +660,10 @@ async function showMerchant(){
     $('card-no-shop').style.display='block';$('card-active-orders').style.display='none';$('stat-bar').style.display='none';$('bottom-nav').style.display='none';
   }else{
     $('card-no-shop').style.display='none';$('card-active-orders').style.display='block';$('stat-bar').style.display='';$('bottom-nav').style.display='';
-    currentShopId=shops[0].id;currentShopName=shops[0].name;
+    currentShopId=shops[0].id;currentShopName=shops[0].name;currentShopNote=shops[0].note||'';
     currentShopStatus=shops[0].status||'active';
     $('merchant-shop-name').textContent=currentShopName;
-    sessionStorage.setItem('shopId',currentShopId);sessionStorage.setItem('shopName',currentShopName);
+    sessionStorage.setItem('shopId',currentShopId);sessionStorage.setItem('shopName',currentShopName);sessionStorage.setItem('shopNote',currentShopNote);
     await loadPackages();showStats();renderOrders();renderPackages();
     $('filter-status').value='active';
     updateShopStatusUI();
@@ -900,6 +913,18 @@ async function doRenameShop(){
   $('merchant-shop-name').textContent=name;
   toast('✅ 店名已修改');closeDlg('dlg-rename-shop');
 }
+function showNote(){
+  $('note-input').value=currentShopNote||'';
+  openDlg('dlg-note');
+}
+async function doSaveNote(){
+  const note=$('note-input').value.trim();
+  const r=await api('POST','/shops',{action:'note',note});
+  if(!r||!r.ok) return toast(r?r.error:'保存失败');
+  currentShopNote=note;
+  sessionStorage.setItem('shopNote',note);
+  toast('✅ 备注已保存');closeDlg('dlg-note');
+}
 function showVipInfo(){
   const exp=sessionStorage.getItem('pin_expire');
   const createTime=sessionStorage.getItem('pin_create');
@@ -959,7 +984,13 @@ async function exportCSV(){
 }// ====== 顾客端 ======
 let customerTimer=null,customerOrder=null;
 async function initCustomer(){
-  try{const r=await api('GET','/shops/'+currentShopId);if(r&&r.ok)$('customer-shop-name').textContent=r.shop.name}catch(e){}
+  try{
+    const r=await api('GET','/shops/'+currentShopId);
+    if(r&&r.ok){
+      $('customer-shop-name').textContent=r.shop.name;
+      if(r.shop.note){$('timer-note').textContent=r.shop.note;$('timer-note').style.display='block'}
+    }
+  }catch(e){}
 }
 async function customerLookup(){
   const code=$('input-code').value.trim();

@@ -194,6 +194,15 @@ export async function onRequest(context) {
       return json({ ok: true, name: shops[idx].name });
     }
 
+    // 修改店铺备注
+    if (body.action === 'note') {
+      const idx = shops.findIndex(s => s.ownerPhone === user.phone && s.status === 'active');
+      if (idx === -1) return json({ ok: false, error: '店铺不存在' }, 404);
+      shops[idx].note = body.note || '';
+      await env.PINDOU_KV.put('shops', JSON.stringify(shops));
+      return json({ ok: true, note: shops[idx].note });
+    }
+
     // 暂停/恢复营业
     if (body.action === 'toggle') {
       const idx = shops.findIndex(s => s.ownerPhone === user.phone);
@@ -245,7 +254,7 @@ export async function onRequest(context) {
     const raw = await env.PINDOU_KV.get('shops') || '[]';
     const shop = JSON.parse(raw).find(s => s.id === shopId);
     if (!shop) return json({ ok: false, error: '店铺不存在' }, 404);
-    return json({ ok: true, shop: { id: shop.id, name: shop.name } });
+    return json({ ok: true, shop: { id: shop.id, name: shop.name, note: shop.note || '' } });
   }
 
   // ============ 订单查询 ============

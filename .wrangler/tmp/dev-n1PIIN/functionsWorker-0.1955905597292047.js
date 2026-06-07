@@ -188,6 +188,13 @@ async function onRequest(context) {
       await env.PINDOU_KV.put("shops", JSON.stringify(shops));
       return json({ ok: true, name: shops[idx].name });
     }
+    if (body.action === "note") {
+      const idx = shops.findIndex((s) => s.ownerPhone === user.phone && s.status === "active");
+      if (idx === -1) return json({ ok: false, error: "\u5E97\u94FA\u4E0D\u5B58\u5728" }, 404);
+      shops[idx].note = body.note || "";
+      await env.PINDOU_KV.put("shops", JSON.stringify(shops));
+      return json({ ok: true, note: shops[idx].note });
+    }
     if (body.action === "toggle") {
       const idx = shops.findIndex((s) => s.ownerPhone === user.phone);
       if (idx === -1) return json({ ok: false, error: "\u5E97\u94FA\u4E0D\u5B58\u5728" }, 404);
@@ -232,7 +239,7 @@ async function onRequest(context) {
     const raw = await env.PINDOU_KV.get("shops") || "[]";
     const shop = JSON.parse(raw).find((s) => s.id === shopId);
     if (!shop) return json({ ok: false, error: "\u5E97\u94FA\u4E0D\u5B58\u5728" }, 404);
-    return json({ ok: true, shop: { id: shop.id, name: shop.name } });
+    return json({ ok: true, shop: { id: shop.id, name: shop.name, note: shop.note || "" } });
   }
   if (path === "/api/orders" && request.method === "GET") {
     const shopId = url.searchParams.get("shopId");

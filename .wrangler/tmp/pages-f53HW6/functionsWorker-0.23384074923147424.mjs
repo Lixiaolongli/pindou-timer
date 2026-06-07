@@ -182,6 +182,13 @@ async function onRequest(context) {
       await env.PINDOU_KV.put("shops", JSON.stringify(shops));
       return json({ ok: true, name: shops[idx].name });
     }
+    if (body.action === "note") {
+      const idx = shops.findIndex((s) => s.ownerPhone === user.phone && s.status === "active");
+      if (idx === -1) return json({ ok: false, error: "\u5E97\u94FA\u4E0D\u5B58\u5728" }, 404);
+      shops[idx].note = body.note || "";
+      await env.PINDOU_KV.put("shops", JSON.stringify(shops));
+      return json({ ok: true, note: shops[idx].note });
+    }
     if (body.action === "toggle") {
       const idx = shops.findIndex((s) => s.ownerPhone === user.phone);
       if (idx === -1) return json({ ok: false, error: "\u5E97\u94FA\u4E0D\u5B58\u5728" }, 404);
@@ -226,7 +233,7 @@ async function onRequest(context) {
     const raw = await env.PINDOU_KV.get("shops") || "[]";
     const shop = JSON.parse(raw).find((s) => s.id === shopId);
     if (!shop) return json({ ok: false, error: "\u5E97\u94FA\u4E0D\u5B58\u5728" }, 404);
-    return json({ ok: true, shop: { id: shop.id, name: shop.name } });
+    return json({ ok: true, shop: { id: shop.id, name: shop.name, note: shop.note || "" } });
   }
   if (path === "/api/orders" && request.method === "GET") {
     const shopId = url.searchParams.get("shopId");
@@ -929,7 +936,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-AIAEW6/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-Uz5bNZ/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -961,7 +968,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-AIAEW6/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-Uz5bNZ/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
