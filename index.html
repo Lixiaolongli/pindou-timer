@@ -852,7 +852,7 @@ async function showLogs(){
   if(!r||!r.ok) return (logList.innerHTML='<div class="empty-text">加载失败</div>');
   const logs=r.logs.reverse();
   if(!logs.length) return (logList.innerHTML='<div class="empty-text">暂无日志</div>');
-  const typeMap={create:'➕ 下单',complete:'✅ 完成',extend:'⏱ 续时'};
+  const typeMap={create:'➕ 下单',complete:'✅ 完成',extend:'⏱ 续时',delete:'🗑️ 删除',renew:'🔋 续费'};
   logList.innerHTML=logs.map(l=>{
     const d = l.detail || {};
     let detail = '';
@@ -861,6 +861,8 @@ async function showLogs(){
     }else if(l.type==='extend'){
       detail = `尾号${d.code} · +${d.minutes}分钟 · +¥${d.price}`;
     }else if(l.type==='complete'){
+      detail = `尾号${d.code}`;
+    }else if(l.type==='delete'){
       detail = `尾号${d.code}`;
     }else{
       detail = JSON.stringify(d);
