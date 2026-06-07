@@ -706,7 +706,7 @@ function showNewOrder(){if(!currentShopId) return toast('请先创建店铺');op
 async function createOrder(){
   const code=$('order-code').value.trim();
   if(!/^\d{4}$/.test(code)) return toast('请输入4位手机尾号');
-  const m=parseInt($('order-minutes').value)||60,p=parseFloat($('order-price').value)||0,t=$('order-type').value;
+  const minutesVal=parseInt($('order-minutes').value);const m=isNaN(minutesVal)?60:minutesVal,p=parseFloat($('order-price').value)||0,t=$('order-type').value;
   const r=await api('POST','/orders',{shopId:currentShopId,code,minutes:m,price:p,type:t});
   if(!r||!r.ok) return toast(r?r.error:'下单失败');
   toast('✅ 下单成功 · '+code);closeDlg('dlg-order');renderOrders();
