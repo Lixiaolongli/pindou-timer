@@ -391,10 +391,11 @@ export async function onRequest(context) {
     if (idx === -1) return json({ ok: false, error: '订单不存在' }, 404);
     const deleted = orders.splice(idx, 1)[0];
     await env.PINDOU_KV.put('orders', JSON.stringify(orders));
+    await addLog(env, 'delete', { phone: user.phone, shopId, code: deleted.code });
     return json({ ok: true, code: deleted.code });
   }
 
-  // ============ 删除订单 ============
+  // ============ 删除订单（旧接口）============
   if (path === '/api/orders/remove' && request.method === 'POST') {
     const user = await auth(request, env);
     if (!user) return json({ ok: false, error: '未登录' }, 401);

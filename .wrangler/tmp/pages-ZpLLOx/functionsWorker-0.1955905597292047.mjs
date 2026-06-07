@@ -360,6 +360,7 @@ async function onRequest(context) {
     if (idx === -1) return json({ ok: false, error: "\u8BA2\u5355\u4E0D\u5B58\u5728" }, 404);
     const deleted = orders.splice(idx, 1)[0];
     await env.PINDOU_KV.put("orders", JSON.stringify(orders));
+    await addLog(env, "delete", { phone: user.phone, shopId, code: deleted.code });
     return json({ ok: true, code: deleted.code });
   }
   if (path === "/api/orders/remove" && request.method === "POST") {
@@ -928,7 +929,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-3bBbw7/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-vUH2Mm/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -960,7 +961,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-3bBbw7/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-vUH2Mm/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

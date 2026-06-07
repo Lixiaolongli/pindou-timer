@@ -366,6 +366,7 @@ async function onRequest(context) {
     if (idx === -1) return json({ ok: false, error: "\u8BA2\u5355\u4E0D\u5B58\u5728" }, 404);
     const deleted = orders.splice(idx, 1)[0];
     await env.PINDOU_KV.put("orders", JSON.stringify(orders));
+    await addLog(env, "delete", { phone: user.phone, shopId, code: deleted.code });
     return json({ ok: true, code: deleted.code });
   }
   if (path === "/api/orders/remove" && request.method === "POST") {
