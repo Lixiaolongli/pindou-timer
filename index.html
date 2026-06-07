@@ -460,7 +460,8 @@ input::placeholder{color:#c5bdb5}
   <h3 style="margin-bottom:12px">📦 我的套餐</h3>
   <div id="pkg-list" style="margin-bottom:16px">加载中...</div>
   <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:12px">
-    <div class="card-title">添加套餐</div>
+    <div class="card-title" id="pkg-form-title">添加套餐</div>
+    <input type="hidden" id="edit-pkg-index" value="-1">
     <input type="text" id="add-pkg-name" placeholder="套餐名称（如：单人1小时）">
     <div style="display:flex;gap:8px">
       <select id="add-pkg-type" style="flex:1;margin-top:0"><option value="single">单人</option><option value="double">双人</option></select>
@@ -469,8 +470,9 @@ input::placeholder{color:#c5bdb5}
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn btn-outline" onclick="closeDlg('dlg-packages')" style="flex:1">关闭</button>
-      <button class="btn btn-outline" onclick="resetPackages()" style="flex:0">🔄 重置</button>
-      <button class="btn btn-primary" onclick="addPackage()" style="flex:1">添加</button>
+      <button class="btn btn-outline" onclick="cancelEditPkg()" id="btn-cancel-edit" style="flex:0;display:none">取消编辑</button>
+      <button class="btn btn-outline" onclick="resetPackages()" style="flex:0" id="btn-reset-pkg">🔄 重置</button>
+      <button class="btn btn-primary" onclick="savePackage()" style="flex:1" id="btn-save-pkg">添加</button>
     </div>
   </div>
 </div></div>
@@ -675,18 +677,45 @@ async function showPackages(){
 }
 function renderPkgList(){
   $('pkg-list').innerHTML=PKG.length
-    ?PKG.map((p,i)=>`<div class="order-item"><div class="order-left"><div class="order-name">${p.name}</div><div class="order-time">${p.type==='single'?'单人':'双人'} · ${p.minutes?p.minutes+'分钟':'不限时'} · ¥${p.price}</div></div><button class="btn btn-sm btn-danger" onclick="delPackage(${i})">删除</button></div>`).join('')
+    ?PKG.map((p,i)=>`<div class="order-item"><div class="order-left"><div class="order-name">${p.name}</div><div class="order-time">${p.type==='single'?'单人':'双人'} · ${p.minutes?p.minutes+'分钟':'不限时'} · ¥${p.price}</div></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn btn-sm btn-outline" onclick="editPackage(${i})">编辑</button><button class="btn btn-sm btn-danger" onclick="delPackage(${i})">删除</button></div></div>`).join('')
     :'<div class="empty-text">暂无套餐</div>';
 }
-async function addPackage(){
-  const name=$('add-pkg-name').value.trim(),type=$('add-pkg-type').value,minutes=parseInt($('add-pkg-minutes').value)||0,price=parseFloat($('add-pkg-price').value)||0;
+function editPackage(i){
+  const p=PKG[i];if(!p)return;
+  $('pkg-form-title').textContent='编辑套餐';
+  $('edit-pkg-index').value=i;
+  $('add-pkg-name').value=p.name;
+  $('add-pkg-type').value=p.type;
+  $('add-pkg-minutes').value=p.minutes;
+  $('add-pkg-price').value=p.price;
+  $('btn-save-pkg').textContent='保存修改';
+  $('btn-cancel-edit').style.display='';
+  $('btn-reset-pkg').style.display='none';
+}
+function cancelEditPkg(){
+  $('pkg-form-title').textContent='添加套餐';
+  $('edit-pkg-index').value='-1';
+  $('add-pkg-name').value='';
+  $('add-pkg-type').value='single';
+  $('add-pkg-minutes').value='60';
+  $('add-pkg-price').value='14.9';
+  $('btn-save-pkg').textContent='添加';
+  $('btn-cancel-edit').style.display='none';
+  $('btn-reset-pkg').style.display='';
+}
+async function savePackage(){
+  const editIdx=parseInt($('edit-pkg-index').value),name=$('add-pkg-name').value.trim(),type=$('add-pkg-type').value,minutes=parseInt($('add-pkg-minutes').value)||0,price=parseFloat($('add-pkg-price').value)||0;
   if(!name) return toast('请输入套餐名称');
-  PKG.push({name,type,minutes,price});
+  if(editIdx>=0){
+    PKG[editIdx]={name,type,minutes,price};
+  }else{
+    PKG.push({name,type,minutes,price});
+  }
   const r=await api('POST','/packages',{shopId:currentShopId,packages:PKG});
   if(!r||!r.ok) return toast(r?r.error:'保存失败');
-  toast('✅ 套餐已添加');
+  toast(editIdx>=0?'✅ 套餐已更新':'✅ 套餐已添加');
   renderPkgList();renderPackages();
-  $('add-pkg-name').value='';$('add-pkg-price').value='14.9';$('add-pkg-minutes').value='60';
+  cancelEditPkg();
 }
 async function delPackage(i){
   PKG.splice(i,1);
