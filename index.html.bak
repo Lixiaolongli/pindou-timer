@@ -149,17 +149,6 @@ input::placeholder{color:#c5bdb5}
 .more-menu .more-danger{color:#d9534f}
 /* 暂停营业横幅 */
 .paused-banner{background:#fff3cd;border:1px solid #ffc107;color:#856404;border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:14px;text-align:center;font-size:.9em;font-weight:500}
-/* 桌号 */
-.table-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-.table-cell{position:relative;border-radius:12px;padding:14px 6px;text-align:center;font-weight:700;font-size:.9em;cursor:pointer;transition:all .15s;border:2px solid #4caf50;background:rgba(76,175,80,.08);color:#2e7d32;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.table-cell:active{transform:scale(.94)}
-.table-cell.busy{border-color:#f44336;background:rgba(244,67,54,.08);color:#c62828}
-.table-cell .table-cell-name{font-size:1em;line-height:1.2}
-.table-cell .table-cell-code{font-size:.65em;opacity:.7;margin-top:4px;letter-spacing:1px}
-.table-cell .table-cell-del{position:absolute;top:2px;right:4px;font-size:.6em;opacity:.4;padding:2px 4px;z-index:1;background:0;border:0;cursor:pointer}
-.table-cell .table-cell-del:hover{opacity:1;color:#f44336}
-.table-input-row{display:flex;gap:8px;margin-bottom:12px}
-.table-input-row input{flex:1;margin-top:0}
 /* 日志列表 */
 .log-item{padding:12px 14px;border-left:3px solid var(--c1);margin-bottom:8px;background:#fefdfa;border-radius:0 8px 8px 0;font-size:.8em}
 .log-item .log-time{color:var(--muted);font-size:.75em;margin-bottom:4px}
@@ -349,7 +338,6 @@ input::placeholder{color:#c5bdb5}
   </nav>
   <div class="more-menu" id="more-menu">
     <button onclick="showVipInfo();toggleMoreMenu()">💎 VIP天数</button>
-    <button onclick="showTables();toggleMoreMenu()">🪑 桌号管理</button>
     <button onclick="showRenameShop();toggleMoreMenu()">✏️ 修改店名</button>
     <button onclick="showNote();toggleMoreMenu()">📝 备注</button>
     <button onclick="exportCSV();toggleMoreMenu()">📥 导出CSV</button>
@@ -358,32 +346,7 @@ input::placeholder{color:#c5bdb5}
     <button onclick="showChangePwd();toggleMoreMenu()">🔒 修改密码</button>
     <button class="more-danger" onclick="logout()">退出登录</button>
   </div>
-</div>
-
-<!-- ====== 桌号管理弹窗 ====== -->
-<div class="dialog-overlay" id="dlg-tables"><div class="dialog">
-  <h3 style="margin-bottom:16px">🪑 桌号管理</h3>
-  <div class="table-input-row">
-    <input type="text" id="table-name-input" placeholder="输入桌号（如：A1、2号桌）" maxlength="10">
-    <button class="btn btn-primary" onclick="addTable()" style="margin:0;width:auto;padding:10px 18px;font-size:.85em">添加</button>
-  </div>
-  <div class="table-grid" id="table-grid">加载中...</div>
-  <div style="display:flex;gap:10px;margin-top:16px">
-    <button class="btn btn-outline" onclick="closeDlg('dlg-tables')" style="flex:1">关闭</button>
-  </div>
-</div></div>
-
-<!-- ====== 桌号重命名弹窗 ====== -->
-<div class="dialog-overlay" id="dlg-rename-table"><div class="dialog">
-  <h3 style="margin-bottom:16px">✏️ 重命名桌号</h3>
-  <input type="text" id="rename-table-input" placeholder="输入新名称" maxlength="10">
-  <div style="display:flex;gap:10px;margin-top:16px">
-    <button class="btn btn-outline" onclick="closeDlg('dlg-rename-table')" style="flex:1">取消</button>
-    <button class="btn btn-primary" onclick="doRenameTable()" style="flex:1">确认</button>
-  </div>
-</div></div>
-
-<!-- ====== 新订单弹窗 ====== -->
+</div><!-- ====== 新订单弹窗 ====== -->
 <div class="dialog-overlay" id="dlg-order"><div class="dialog">
   <h3 style="margin-bottom:16px">新订单</h3>
   <div class="package-grid" id="order-packages"></div>
@@ -395,8 +358,6 @@ input::placeholder{color:#c5bdb5}
   <input type="number" id="order-minutes" value="60" min="5" max="480" step="5">
   <label>价格（元）</label>
   <input type="number" id="order-price" value="14.9" min="0" step="0.1">
-  <label>桌号（可选）</label>
-  <select id="order-table" style="margin-top:10px"><option value="">不选桌号</option></select>
   <div style="display:flex;gap:10px;margin-top:16px">
     <button class="btn btn-outline" onclick="closeDlg('dlg-order')" style="flex:1">取消</button>
     <button class="btn btn-primary" onclick="createOrder()" style="flex:1">确认下单</button>
@@ -753,24 +714,13 @@ async function resetPackages(){
   toast('✅ 已恢复默认套餐');renderPkgList();renderPackages();
 }
 function pickPkg(m,p,t){$('order-minutes').value=m;$('order-price').value=p;$('order-type').value=t}
-async function showNewOrder(){if(!currentShopId) return toast('请先创建店铺');await refreshTableSelect();openDlg('dlg-order')}
-async function refreshTableSelect(){
-  const sel=$('order-table');sel.innerHTML='<option value="">不选桌号</option>';
-  try{
-    const r=await api('GET','/tables?shopId='+currentShopId);
-    if(r&&r.ok&&r.tables) r.tables.forEach(t=>{
-      const busy=t.boundCode?' 🔴':' 🟢';
-      sel.innerHTML+=`<option value="${t.name}" ${t.boundCode?'disabled':''}>${t.name}${busy}${t.boundCode?'(已占)':'(空闲)'}</option>`;
-    });
-  }catch(e){}
-}
+function showNewOrder(){if(!currentShopId) return toast('请先创建店铺');openDlg('dlg-order')}
 
 async function createOrder(){
   const code=$('order-code').value.trim();
   if(!/^\d{4}$/.test(code)) return toast('请输入4位手机尾号');
   const minutesVal=parseInt($('order-minutes').value);const m=isNaN(minutesVal)?60:minutesVal,p=parseFloat($('order-price').value)||0,t=$('order-type').value;
-  const tn=$('order-table').value;
-  const r=await api('POST','/orders',{shopId:currentShopId,code,minutes:m,price:p,type:t,tableName:tn});
+  const r=await api('POST','/orders',{shopId:currentShopId,code,minutes:m,price:p,type:t});
   if(!r||!r.ok) return toast(r?r.error:'下单失败');
   toast('✅ 下单成功 · '+code);closeDlg('dlg-order');renderOrders();
 }
@@ -812,7 +762,7 @@ function renderOrderItem(o,isActive){
     return `<div class="order-item" onclick="toggleOrderExpand(event,'${o.code}')">
       <input type="checkbox" class="order-check" id="chk-${o.code}" onclick="event.stopPropagation();onCheck()">
       <div class="order-left">
-        <div class="order-code">${o.code}${o.tableName?` <span style="background:#fce4ec;color:#c62828;padding:1px 6px;border-radius:6px;font-size:.75em;margin-left:4px">🪑${o.tableName}</span>`:''}</div>
+        <div class="order-code">${o.code}</div>
         <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
         <div class="order-time">${rs}</div></div>
       <span class="order-status-inline ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
@@ -825,7 +775,7 @@ function renderOrderItem(o,isActive){
   }else{
     const doneTime=new Date(o.endTime||o.createTime).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
     return `<div class="order-item"><div class="order-left">
-      <div class="order-code">${o.code}${o.tableName?` <span style="background:#f5f5f5;color:#999;padding:1px 6px;border-radius:6px;font-size:.75em;margin-left:4px">🪑${o.tableName}</span>`:''}</div>
+      <div class="order-code">${o.code}</div>
       <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
       <div class="order-time">${doneTime} 完成</div></div>
       <span class="order-status status-done">✅完成</span>
@@ -934,67 +884,6 @@ async function showLogs(){
   }).join('');
 }
 function toggleMoreMenu(){$('more-menu').classList.toggle('show')}
-// ====== 桌号管理 ======
-async function showTables(){
-  openDlg('dlg-tables');
-  await renderTableGrid();
-}
-async function renderTableGrid(){
-  const grid=$('table-grid');grid.innerHTML='加载中...';
-  const r=await api('GET','/tables?shopId='+currentShopId);
-  if(!r||!r.ok){grid.innerHTML='<div class="empty-text">加载失败</div>';return}
-  if(!r.tables.length){grid.innerHTML='<div class="empty-text">还没有桌号，添加第一个吧</div>';return}
-  grid.innerHTML=r.tables.map(t=>{
-    const busy=!!t.boundCode;
-    const cls=busy?'busy':'';
-    return `<div class="table-cell ${cls}" onclick="${busy?'':`pickTable('${t.name}')`}" title="${busy?'已绑定·尾号'+t.boundCode:'空闲可选'}">
-      <button class="table-cell-del" onclick="event.stopPropagation();delTableDialog('${t.name}')">✕</button>
-      <span class="table-cell-name" ondblclick="event.stopPropagation();showRenameTable('${t.name}')">${t.name}</span>
-      ${busy?`<span class="table-cell-code">📱${t.boundCode}</span>`:`<span class="table-cell-code" style="color:#4caf50">空闲</span>`}
-    </div>`;
-  }).join('');
-}
-function pickTable(name){
-  closeDlg('dlg-tables');
-  openDlg('dlg-order');
-  setTimeout(()=>{$('order-table').value=name},100);
-}
-async function addTable(){
-  const name=$('table-name-input').value.trim();
-  if(!name) return toast('请输入桌号');
-  const r=await api('POST','/tables',{shopId:currentShopId,action:'add',name});
-  if(!r||!r.ok) return toast(r?r.error:'添加失败');
-  toast('✅ 已添加 '+name);
-  $('table-name-input').value='';
-  await renderTableGrid();
-  await refreshTableSelect();
-}
-async function delTableDialog(name){
-  if(!confirm(`确定删除桌号「${name}」吗？${name}若有进行中的订单，桌号将解除绑定。`)) return;
-  const r=await api('POST','/tables',{shopId:currentShopId,action:'delete',name});
-  if(!r||!r.ok) return toast(r?r.error:'删除失败');
-  toast('🗑️ 已删除 '+name);
-  await renderTableGrid();
-  await refreshTableSelect();
-}
-let renameTableName='';
-function showRenameTable(name){
-  renameTableName=name;
-  $('rename-table-input').value=name;
-  openDlg('dlg-rename-table');
-}
-async function doRenameTable(){
-  const newName=$('rename-table-input').value.trim();
-  if(!newName) return toast('请输入新名称');
-  if(newName===renameTableName) return closeDlg('dlg-rename-table');
-  const r=await api('POST','/tables',{shopId:currentShopId,action:'rename',name:renameTableName,newName});
-  if(!r||!r.ok) return toast(r?r.error:'重命名失败');
-  toast('✅ 已重命名');closeDlg('dlg-rename-table');
-  await renderTableGrid();
-  await refreshTableSelect();
-  renderOrders();
-}
-// ====== 桌号管理 End ======
 async function toggleShop(){
   const r=await api('POST','/shops',{action:'toggle'});
   if(!r||!r.ok) return toast(r?r.error:'操作失败');
@@ -1083,11 +972,11 @@ function showQRCode(){
 async function exportCSV(){
   const r=await api('GET','/orders?shopId='+currentShopId);
   if(!r||!r.ok||!r.orders.length) return toast('暂无数据');
-  let csv='\uFEFF订单号,桌号,类型,价格,时长(分钟),状态,开始时间,结束时间\n';
+  let csv='\uFEFF订单号,类型,价格,时长(分钟),状态,开始时间,结束时间\n';
   r.orders.forEach(o=>{
     const start=o.startTime?new Date(o.startTime).toLocaleString('zh-CN'):'';
     const end=o.endTime?new Date(o.endTime).toLocaleString('zh-CN'):'';
-    csv+=`${o.code},${o.tableName||''},${o.type==='double'?'双人':'单人'},${o.price},${o.minutes||'不限时'},${o.status==='active'?'进行中':'已完成'},${start},${end}\n`;
+    csv+=`${o.code},${o.type==='double'?'双人':'单人'},${o.price},${o.minutes||'不限时'},${o.status==='active'?'进行中':'已完成'},${start},${end}\n`;
   });
   const b=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
   a.href=URL.createObjectURL(b);a.download='拼豆订单_'+new Date().toISOString().slice(0,10)+'.csv';a.click();

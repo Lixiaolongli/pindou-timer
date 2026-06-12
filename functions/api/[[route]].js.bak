@@ -257,55 +257,6 @@ export async function onRequest(context) {
     return json({ ok: true, shop: { id: shop.id, name: shop.name, note: shop.note || '' } });
   }
 
-  // ============ 桌号管理 ============
-  if (path === '/api/tables' && request.method === 'GET') {
-    const user = await auth(request, env);
-    if (!user) return json({ ok: false, error: '未登录' }, 401);
-    const shopId = url.searchParams.get('shopId');
-    if (!shopId) return json({ ok: false, error: '缺少shopId' }, 400);
-    const raw = await env.PINDOU_KV.get('tables') || '{}';
-    const data = JSON.parse(raw);
-    const tables = data[shopId] || [];
-    const ordersRaw = await env.PINDOU_KV.get('orders') || '[]';
-    const activeOrders = JSON.parse(ordersRaw).filter(o => o.shopId === shopId && o.status === 'active');
-    const boundMap = {};
-    for (const o of activeOrders) { if (o.tableName) boundMap[o.tableName] = o.code; }
-    return json({ ok: true, tables: tables.map(t => ({ ...t, boundCode: boundMap[t.name] || null })) });
-  }
-  if (path === '/api/tables' && request.method === 'POST') {
-    const user = await auth(request, env);
-    if (!user || user.role !== 'merchant') return json({ ok: false, error: '无权限' }, 403);
-    const { shopId, action: act, name, newName } = await request.json();
-    if (!shopId) return json({ ok: false, error: '缺少shopId' }, 400);
-    const raw = await env.PINDOU_KV.get('tables') || '{}';
-    const data = JSON.parse(raw);
-    if (!data[shopId]) data[shopId] = [];
-    if (act === 'add') {
-      if (!name || !name.trim()) return json({ ok: false, error: '桌号不能为空' }, 400);
-      if (data[shopId].find(t => t.name === name.trim())) return json({ ok: false, error: '桌号已存在' }, 400);
-      if (data[shopId].length >= 30) return json({ ok: false, error: '最多30张桌' }, 400);
-      data[shopId].push({ name: name.trim(), createTime: Date.now() });
-    } else if (act === 'delete') {
-      data[shopId] = data[shopId].filter(t => t.name !== name);
-    } else if (act === 'rename') {
-      const idx = data[shopId].findIndex(t => t.name === name);
-      if (idx === -1) return json({ ok: false, error: '桌号不存在' }, 404);
-      if (!newName || !newName.trim()) return json({ ok: false, error: '新名称不能为空' }, 400);
-      if (data[shopId].find(t => t.name === newName.trim())) return json({ ok: false, error: '新桌号已存在' }, 400);
-      const oldName = data[shopId][idx].name;
-      data[shopId][idx].name = newName.trim();
-      const ordersRaw = await env.PINDOU_KV.get('orders') || '[]';
-      let orders = JSON.parse(ordersRaw);
-      let changed = false;
-      for (const o of orders) { if (o.shopId === shopId && o.tableName === oldName) { o.tableName = newName.trim(); changed = true; } }
-      if (changed) await env.PINDOU_KV.put('orders', JSON.stringify(orders));
-    } else {
-      return json({ ok: false, error: '无效操作' }, 400);
-    }
-    await env.PINDOU_KV.put('tables', JSON.stringify(data));
-    return json({ ok: true, tables: data[shopId] });
-  }
-
   // ============ 订单查询 ============
   if (path === '/api/orders' && request.method === 'GET') {
     const shopId = url.searchParams.get('shopId');
@@ -336,22 +287,12 @@ export async function onRequest(context) {
     const user = await auth(request, env);
     if (!user) return json({ ok: false, error: '未登录' }, 401);
     const body = await request.json();
-    const { shopId, code, minutes, price, type, tableName } = body;
+    const { shopId, code, minutes, price, type } = body;
     if (!shopId || !code || !/^\d{4}$/.test(code)) return json({ ok: false, error: '参数错误' }, 400);
     const raw = await env.PINDOU_KV.get('orders') || '[]';
     let orders = JSON.parse(raw);
     if (orders.find(o => o.shopId === shopId && o.code === code && o.status === 'active')) {
       return json({ ok: false, error: '该手机号已有进行中的订单' }, 400);
-    }
-    // 桌号校验
-    const table = (tableName || '').trim();
-    if (table) {
-      const tablesRaw = await env.PINDOU_KV.get('tables') || '{}';
-      const tables = JSON.parse(tablesRaw)[shopId] || [];
-      if (!tables.find(t => t.name === table)) return json({ ok: false, error: '桌号不存在，请刷新桌号列表' }, 400);
-      if (orders.find(o => o.shopId === shopId && o.tableName === table && o.status === 'active')) {
-        return json({ ok: false, error: '该桌号已被其他订单占用' }, 400);
-      }
     }
     const order = {
       id: crypto.randomUUID().slice(0, 8),
@@ -361,11 +302,10 @@ export async function onRequest(context) {
       minutes: Number(minutes) || 0,
       startTime: Date.now(),
       status: 'active',
-      tableName: table,
     };
     orders.push(order);
     await env.PINDOU_KV.put('orders', JSON.stringify(orders));
-    await addLog(env, 'create', { phone: user.phone, shopId, code, type: order.type, price: order.price, minutes: order.minutes, table: table });
+    await addLog(env, 'create', { phone: user.phone, shopId, code, type: order.type, price: order.price, minutes: order.minutes });
     return json({ ok: true, order });
   }
 
