@@ -1201,20 +1201,17 @@ function startTick(){
   tickTimer = setInterval(()=>{
     if(!currentShopId||!$('page-merchant').classList.contains('active'))return;
     document.querySelectorAll('#active-orders .order-item').forEach(el=>{
-      const timeEl=el.querySelector('.order-time');
       const statusEl=el.querySelector('.order-status-inline');
-      if(!timeEl||!statusEl)return;
-      const txt=timeEl.textContent.trim();
-      if(txt.includes('不限时')||txt.includes('到期'))return;
+      if(!statusEl)return;
+      const txt=statusEl.textContent.trim();
+      if(txt.includes('不限时')||txt.includes('到期')||txt.includes('⚠️'))return;
       const parts=txt.split(':');
       let mins=parseInt(parts[0]),secs=parseInt(parts[1]);
       if(isNaN(mins)||isNaN(secs))return;
       secs--;
       if(secs<0){mins--;secs=59}
-      if(mins<0){timeEl.textContent='已到期';statusEl.textContent='⚠️到期';statusEl.className='order-status-inline status-expired';return}
-      const newTxt=mins+':'+String(secs).padStart(2,'0');
-      timeEl.textContent=newTxt;
-      statusEl.textContent=newTxt;
+      if(mins<0){statusEl.textContent='⚠️到期';statusEl.className='order-status-inline status-expired';return}
+      statusEl.textContent=mins+':'+String(secs).padStart(2,'0');
     });
   },1000);
 }
