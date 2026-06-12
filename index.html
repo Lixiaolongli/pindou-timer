@@ -335,8 +335,12 @@ input::placeholder{color:#c5bdb5}
 
   <!-- 已完成订单 -->
   <div class="card">
-    <div class="card-title">📋 已完成</div>
-    <div id="done-orders">暂无记录</div>
+    <div class="card-title">📋 今日已完成</div>
+    <div id="done-today">暂无记录</div>
+  </div>
+  <div class="card">
+    <div class="card-title" onclick="toggleHistory()" style="cursor:pointer;user-select:none">📦 历史记录 <span id="history-count" style="color:var(--muted);font-weight:400"></span> ▾</div>
+    <div id="done-history" style="display:none">暂无记录</div>
   </div>
 
   <!-- 底部导航 -->
@@ -783,10 +787,9 @@ async function renderOrders(){
   if(status!=='all') url+='&status='+status;
   const r=await api('GET',url);
   if(!r||!r.ok){ console.warn('[renderOrders] API失败', r); return; }
-  const orders=r&&r.ok?r.orders:[];
+  const orders=r.orders||[];
   const active=orders.filter(o=>o.status==='active'),done=orders.filter(o=>o.status!=='active');
   $('active-count').textContent=active.length;
-  // 在title上显示所有进行中订单尾号（长按可查看）
   const countEl = $('active-count');
   if(countEl) countEl.title = active.length ? '尾号: '+active.map(o=>o.code).join(', ') : '';
   const now=Date.now();
@@ -798,9 +801,24 @@ async function renderOrders(){
   const hasExpired=active.some(o=>o.minutes>0&&now>=o.startTime+o.minutes*60000);
   if(hasExpired) playBeep();
   $('active-orders').innerHTML=active.length?active.map(o=>renderOrderItem(o,true)).join(''):'<div class="empty-text">暂无进行中的订单</div>';
-  if(status==='all'||status==='completed'){
-    $('done-orders').innerHTML=done.length?done.slice(0,20).map(o=>renderOrderItem(o,false)).join(''):'<div class="empty-text">暂无记录</div>';
+
+  // 拆分今日 vs 历史
+  const todayStart=new Date();todayStart.setHours(0,0,0,0);
+  const t0=todayStart.getTime();
+  const todayDone=done.filter(o=>(o.endTime||o.startTime)>=t0);
+  const historyDone=done.filter(o=>(o.endTime||o.startTime)<t0);
+
+  if(status==='active'){
+    // 只看进行中时：今日已完成也显示
+    $('done-today').innerHTML=todayDone.length?todayDone.map(o=>renderOrderItem(o,false)).join(''):'<div class="empty-text">今日暂无</div>';
+    $('done-history').innerHTML=historyDone.length?historyDone.map(o=>renderOrderItem(o,false)).join(''):'<div class="empty-text">暂无历史</div>';
+    $('history-count').textContent=historyDone.length?'('+historyDone.length+'条)':'';
+  }else if(status==='all'||status==='completed'){
+    $('done-today').innerHTML=todayDone.length?todayDone.map(o=>renderOrderItem(o,false)).join(''):'<div class="empty-text">今日暂无</div>';
+    $('done-history').innerHTML=historyDone.length?historyDone.map(o=>renderOrderItem(o,false)).join(''):'<div class="empty-text">暂无历史</div>';
+    $('history-count').textContent=historyDone.length?'('+historyDone.length+'条)':'';
   }
+
   updateBatchBar();
 }
 function renderOrderItem(o,isActive){
@@ -823,11 +841,17 @@ function renderOrderItem(o,isActive){
         ${o.minutes>0?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();showExtend('${o.code}')">续时</button>`:''}
       </div></div>`;
   }else{
-    const doneTime=new Date(o.endTime||o.createTime).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+    const ts=o.endTime||o.startTime;
+    const d=new Date(ts);
+    const today=new Date();today.setHours(0,0,0,0);
+    const isToday=d.getTime()>=today.getTime();
+    const timeStr=d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+    const dateStr=(d.getMonth()+1)+'/'+d.getDate();
+    const label=isToday?timeStr+' 完成':dateStr+' '+timeStr+' 完成';
     return `<div class="order-item"><div class="order-left">
       <div class="order-code">${o.code}${o.tableName?` <span style="background:#f5f5f5;color:#999;padding:1px 6px;border-radius:6px;font-size:.75em;margin-left:4px">🪑${o.tableName}</span>`:''}</div>
       <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
-      <div class="order-time">${doneTime} 完成</div></div>
+      <div class="order-time">${label}</div></div>
       <span class="order-status status-done">✅完成</span>
       <button class="btn btn-sm" onclick="event.stopPropagation();deleteOrder('${o.id}','${o.code}')" title="删除" style="margin-left:8px">🗑️</button>
     </div>`;
@@ -864,6 +888,9 @@ async function deleteOrder(id,code){
   toast('🗑️ 已删除 '+code);renderOrders();showStats();
 }
 function onCheck(){updateBatchBar()}
+function toggleHistory(){
+  const el=$('done-history');el.style.display=el.style.display==='none'?'block':'none';
+}
 function updateBatchBar(){
   const checks=document.querySelectorAll('#active-orders .order-check:checked');
   const bar=$('batch-bar'),cnt=$('batch-count');
