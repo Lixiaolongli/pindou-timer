@@ -716,6 +716,8 @@ async function showMerchant(){
     $('card-no-shop').style.display='block';$('card-active-orders').style.display='none';$('stat-bar').style.display='none';$('bottom-nav').style.display='none';
   }else{
     $('card-no-shop').style.display='none';$('card-active-orders').style.display='block';$('stat-bar').style.display='';$('bottom-nav').style.display='';
+    // 默认显示今天日期
+    if(!$('stats-date').value) $('stats-date').value=new Date().toISOString().slice(0,10);
     currentShopId=shops[0].id;currentShopName=shops[0].name;currentShopNote=shops[0].note||'';
     currentShopStatus=shops[0].status||'active';
     $('merchant-shop-name').textContent=currentShopName;
