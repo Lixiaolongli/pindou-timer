@@ -501,22 +501,26 @@ export async function onRequest(context) {
     if (!user) return json({ ok: false, error: '未登录' }, 401);
     const shopId = url.searchParams.get('shopId');
     if (!shopId) return json({ ok: false, error: '缺少shopId' }, 400);
+    const dateStr = url.searchParams.get('date'); // YYYY-MM-DD, 不传=今天
     const raw = await env.PINDOU_KV.get('orders') || '[]';
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const t0 = today.getTime();
+    let d;
+    if (dateStr) { d = new Date(dateStr + 'T00:00:00+08:00'); }
+    else { d = new Date(); d.setHours(0,0,0,0); }
+    const t0 = d.getTime();
+    const t1 = t0 + 86400000;
     const orders = JSON.parse(raw).filter(o => o.shopId === shopId);
-    const todayOrders = orders.filter(o => o.startTime >= t0);
-    const todayCompleted = todayOrders.filter(o => o.status === 'completed');
-    const todayActive = todayOrders.filter(o => o.status === 'active');
-    const revenue = todayCompleted.reduce((s,o) => s + (o.price||0), 0)
-                   + todayActive.reduce((s,o) => s + (o.price||0), 0);
+    const dayOrders = orders.filter(o => o.startTime >= t0 && o.startTime < t1);
+    const dayCompleted = dayOrders.filter(o => o.status === 'completed');
+    const dayActive = dayOrders.filter(o => o.status === 'active');
+    const revenue = dayCompleted.reduce((s,o) => s + (o.price||0), 0)
+                   + dayActive.reduce((s,o) => s + (o.price||0), 0);
     return json({ ok: true, stats: {
-      todayTotal: todayOrders.length,
-      todayActive: todayActive.length,
-      todayCompleted: todayCompleted.length,
-      todayRevenue: Math.round(revenue * 100) / 100,
+      dayTotal: dayOrders.length,
+      dayActive: dayActive.length,
+      dayCompleted: dayCompleted.length,
+      dayRevenue: Math.round(revenue * 100) / 100,
       totalOrders: orders.length,
+      date: dateStr || new Date().toISOString().slice(0,10),
     }});
   }
 
