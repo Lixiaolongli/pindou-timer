@@ -833,8 +833,7 @@ function renderOrderItem(o,isActive){
       <input type="checkbox" class="order-check" id="chk-${o.code}" onclick="event.stopPropagation();onCheck()">
       <div class="order-left">
         <div class="order-code">${o.code}${o.tableName?` <span style="background:#fce4ec;color:#c62828;padding:1px 6px;border-radius:6px;font-size:.75em;margin-left:4px">🪑${o.tableName}</span>`:''}</div>
-        <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
-        <div class="order-time">${rs}</div></div>
+        <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div></div>
       <span class="order-status-inline ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
       <div class="order-actions">
         <button class="btn btn-sm" onclick="event.stopPropagation();editOrder('${o.id}','${o.code}','${o.type}','${o.price}','${o.minutes}')" title="编辑">✏️</button>
