@@ -852,9 +852,9 @@ function renderOrderItem(o,isActive){
     const TWELVE_HOURS=12*60*60*1000;
     const endAt=o.minutes>0?o.startTime+o.minutes*60000:o.startTime+TWELVE_HOURS;
     const remain=Math.max(0,Math.ceil((endAt-Date.now())/1000));
-    const rs=remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0');
-    const expired=Date.now()>=endAt;
     const isUnlimited=o.minutes===0;
+    const rs=isUnlimited?'不限时♾️':(remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0'));
+    const expired=Date.now()>=endAt;
     return `<div class="order-item" onclick="toggleOrderExpand(event,'${o.code}')">
       <input type="checkbox" class="order-check" id="chk-${o.code}" onclick="event.stopPropagation();onCheck()">
       <div class="order-left">
@@ -1181,9 +1181,9 @@ async function customerLookup(){
   $('timer-info').textContent=(customerOrder.type==='double'?'双人':'单人')+' · ¥'+customerOrder.price+' · '+(customerOrder.minutes>0?customerOrder.minutes+'分钟':'不限时');
   if(customerTimer)clearInterval(customerTimer);
   if(customerOrder.minutes===0){
-    // 不限时订单：显示12小时超时倒计时
-    updateUnlimitedTimer();
-    customerTimer=setInterval(updateUnlimitedTimer,1000);
+    // 不限时订单：只显示系统超时检测，不显示倒计时
+    $('timer-display').innerHTML='<div class="timer-number" style="font-size:3em">♾️</div><div class="timer-label">不限时畅玩</div>';
+    customerTimer=setInterval(checkCustomerStatus,30000);
   }else{
     updateCustomerTimer();customerTimer=setInterval(updateCustomerTimer,1000);
   }
@@ -1198,19 +1198,6 @@ function updateCustomerTimer(){
     $('timer-display').innerHTML=`<div class="timer-number${w}">${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div><div class="timer-label">剩余时间</div>`;
   }
   if(Math.floor(Date.now()/1000)%5===0) checkCustomerStatus();
-}
-function updateUnlimitedTimer(){
-  if(!customerOrder||customerOrder.minutes!==0)return;
-  const TWELVE_HOURS=12*60*60*1000;
-  const end=customerOrder.startTime+TWELVE_HOURS;
-  const remain=Math.max(0,Math.ceil((end-Date.now())/1000));
-  if(remain<=0){
-    $('timer-display').innerHTML='<div class="timer-number warning">00:00</div><div class="timer-label">⏰ 时间到！</div><div class="expired-tip">不限时订单已超12小时，系统将自动结账</div>';
-  }else{
-    const m=Math.floor(remain/60),s=remain%60,w=remain<=3600?' warning':'';
-    $('timer-display').innerHTML=`<div class="timer-number${w}">${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div><div class="timer-label">不限时 · 超时前剩余（12小时自动结账）</div>`;
-  }
-  if(Math.floor(Date.now()/1000)%30===0) checkCustomerStatus();
 }
 async function checkCustomerStatus(){
   const r=await api('GET','/orders/lookup?shopId='+currentShopId+'&code='+(customerOrder?customerOrder.code:''));
