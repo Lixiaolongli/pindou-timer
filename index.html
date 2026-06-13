@@ -1058,6 +1058,7 @@ async function toggleShop(){
   if(!r||!r.ok) return toast(r?r.error:'操作失败');
   currentShopStatus=r.status;
   updateShopStatusUI();
+  if(r.status==='active') renderOrders(); // 恢复营业后刷新订单（后端已补偿startTime）
   toast(r.status==='paused'?'⏸️ 已暂停营业':'▶️ 已恢复营业');
 }
 function updateShopStatusUI(){
