@@ -207,9 +207,32 @@ export async function onRequest(context) {
     if (body.action === 'toggle') {
       const idx = shops.findIndex(s => s.ownerPhone === user.phone);
       if (idx === -1) return json({ ok: false, error: '店铺不存在' }, 404);
-      shops[idx].status = shops[idx].status === 'active' ? 'paused' : 'active';
+      const shop = shops[idx];
+      if (shop.status === 'active') {
+        // 暂停营业：记录暂停时间
+        shop.status = 'paused';
+        shop.pausedAt = Date.now();
+      } else {
+        // 恢复营业：计算暂停时长，补偿订单计时
+        const pausedDuration = shop.pausedAt ? Date.now() - shop.pausedAt : 0;
+        shop.status = 'active';
+        delete shop.pausedAt;
+        if (pausedDuration > 0) {
+          // 给该店铺所有 active 订单的 startTime 加上暂停时长
+          const rawOrders = await env.PINDOU_KV.get('orders') || '[]';
+          const orders = JSON.parse(rawOrders);
+          let ordersChanged = false;
+          for (const o of orders) {
+            if (o.shopId === shop.id && o.status === 'active' && o.startTime) {
+              o.startTime += pausedDuration;
+              ordersChanged = true;
+            }
+          }
+          if (ordersChanged) await env.PINDOU_KV.put('orders', JSON.stringify(orders));
+        }
+      }
       await env.PINDOU_KV.put('shops', JSON.stringify(shops));
-      return json({ ok: true, status: shops[idx].status });
+      return json({ ok: true, status: shop.status });
     }
 
     // 创建店铺
@@ -313,11 +336,17 @@ export async function onRequest(context) {
     const status = url.searchParams.get('status'); // active|completed|all
     const search = url.searchParams.get('search'); // 手机尾号搜索
     if (!shopId) return json({ ok: false, error: '缺少shopId' }, 400);
+    // 读取店铺状态，暂停中的店铺订单不自动超时
+    const rawShops = await env.PINDOU_KV.get('shops') || '[]';
+    const shops = JSON.parse(rawShops);
+    const shop = shops.find(s => s.id === shopId);
+    const isPaused = shop && shop.status === 'paused';
     const raw = await env.PINDOU_KV.get('orders') || '[]';
     let allOrders = JSON.parse(raw);
     const now = Date.now();
     const TWELVE_HOURS = 12 * 60 * 60 * 1000; // 不限时订单超时：12小时
     let changed = false;
+    if (!isPaused) {
     for (const o of allOrders) {
       // 限时订单：时间到了自动完成
       if (o.status === 'active' && o.minutes > 0 && o.startTime && now >= o.startTime + o.minutes * 60000) {
@@ -331,6 +360,7 @@ export async function onRequest(context) {
         o.endTime = o.startTime + TWELVE_HOURS;
         changed = true;
       }
+    }
     }
     if (changed) await env.PINDOU_KV.put('orders', JSON.stringify(allOrders));
     let orders = allOrders.filter(o => o.shopId === shopId);
@@ -547,9 +577,15 @@ export async function onRequest(context) {
     const shopId = url.searchParams.get('shopId');
     const code = url.searchParams.get('code');
     if (!shopId || !code) return json({ ok: false, error: '缺少参数' }, 400);
+    // 检查店铺是否暂停
+    const rawShops = await env.PINDOU_KV.get('shops') || '[]';
+    const shops = JSON.parse(rawShops);
+    const shop = shops.find(s => s.id === shopId);
+    const isPaused = shop && shop.status === 'paused';
     const raw = await env.PINDOU_KV.get('orders') || '[]';
     let allOrders = JSON.parse(raw);
-    // 同样需要检查不限时订单的12小时超时
+    // 同样需要检查不限时订单的12小时超时（暂停中跳过）
+    if (!isPaused) {
     const now = Date.now();
     const TWELVE_HOURS = 12 * 60 * 60 * 1000;
     let changed = false;
@@ -562,6 +598,7 @@ export async function onRequest(context) {
       }
     }
     if (changed) await env.PINDOU_KV.put('orders', JSON.stringify(allOrders));
+    }
     const order = allOrders.find(o => o.shopId === shopId && o.code === code && o.status === 'active');
     if (!order) return json({ ok: false, error: '订单不存在或已结束' }, 404);
     return json({ ok: true, order });
