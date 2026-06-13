@@ -316,11 +316,19 @@ export async function onRequest(context) {
     const raw = await env.PINDOU_KV.get('orders') || '[]';
     let allOrders = JSON.parse(raw);
     const now = Date.now();
+    const TWELVE_HOURS = 12 * 60 * 60 * 1000; // 不限时订单超时：12小时
     let changed = false;
     for (const o of allOrders) {
+      // 限时订单：时间到了自动完成
       if (o.status === 'active' && o.minutes > 0 && o.startTime && now >= o.startTime + o.minutes * 60000) {
         o.status = 'completed';
         o.endTime = o.startTime + o.minutes * 60000;
+        changed = true;
+      }
+      // 不限时订单(minutes===0)：超过12小时自动完成
+      if (o.status === 'active' && o.minutes === 0 && o.startTime && now >= o.startTime + TWELVE_HOURS) {
+        o.status = 'completed';
+        o.endTime = o.startTime + TWELVE_HOURS;
         changed = true;
       }
     }
@@ -420,8 +428,18 @@ export async function onRequest(context) {
     let orders = JSON.parse(raw);
     const order = orders.find(o => o.shopId === shopId && o.code === code && o.status === 'active');
     if (!order) return json({ ok: false, error: '订单不存在' }, 404);
-    if (minutes === 0) order.minutes = 0;
-    else order.minutes += (Number(minutes) || 0);
+    const m = Number(minutes) || 0;
+    if (order.minutes === 0 && m > 0) {
+      // 不限时→限时：重置startTime，设定分钟数
+      order.minutes = m;
+      order.startTime = Date.now();
+    } else if (order.minutes === 0 && m === 0) {
+      // 不限时续不限时：重置startTime，保持不限时
+      order.startTime = Date.now();
+    } else {
+      // 限时订单：直接叠加分钟数
+      order.minutes += m;
+    }
     order.price += (Number(price) || 0);
     await env.PINDOU_KV.put('orders', JSON.stringify(orders));
     await addLog(env, 'extend', { phone: user.phone, shopId, code, minutes, price });
@@ -530,7 +548,21 @@ export async function onRequest(context) {
     const code = url.searchParams.get('code');
     if (!shopId || !code) return json({ ok: false, error: '缺少参数' }, 400);
     const raw = await env.PINDOU_KV.get('orders') || '[]';
-    const order = JSON.parse(raw).find(o => o.shopId === shopId && o.code === code && o.status === 'active');
+    let allOrders = JSON.parse(raw);
+    // 同样需要检查不限时订单的12小时超时
+    const now = Date.now();
+    const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+    let changed = false;
+    for (const o of allOrders) {
+      if (o.status === 'active' && o.minutes > 0 && o.startTime && now >= o.startTime + o.minutes * 60000) {
+        o.status = 'completed'; o.endTime = o.startTime + o.minutes * 60000; changed = true;
+      }
+      if (o.status === 'active' && o.minutes === 0 && o.startTime && now >= o.startTime + TWELVE_HOURS) {
+        o.status = 'completed'; o.endTime = o.startTime + TWELVE_HOURS; changed = true;
+      }
+    }
+    if (changed) await env.PINDOU_KV.put('orders', JSON.stringify(allOrders));
+    const order = allOrders.find(o => o.shopId === shopId && o.code === code && o.status === 'active');
     if (!order) return json({ ok: false, error: '订单不存在或已结束' }, 404);
     return json({ ok: true, order });
   }

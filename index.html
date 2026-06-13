@@ -627,6 +627,8 @@ function route(){
   userRole=sessionStorage.getItem('pin_role')||'';
   userPhone=sessionStorage.getItem('pin_phone')||'';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.dialog-overlay').forEach(d=>d.classList.remove('show'));
+  if(document.getElementById('more-menu')) document.getElementById('more-menu').classList.remove('show');
   const p=new URLSearchParams(location.search);
   const shopId=p.get('shopId')||p.get('t')||p.get('id');
 
@@ -713,11 +715,12 @@ async function deleteMerchant(phone){
 async function showMerchant(){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   $('page-merchant').classList.add('active');
+  $('more-menu').classList.remove('show'); // 确保更多菜单默认关闭
   const r=await api('GET','/shops');
   if(!r||!r.ok) return toast('加载店铺失败');
   const shops=r.shops.filter(s=>s.status==='active'||s.status==='paused');
   if(!shops.length){
-    $('card-no-shop').style.display='block';$('card-active-orders').style.display='none';$('stat-bar').style.display='none';$('bottom-nav').style.display='none';
+    $('card-no-shop').style.display='block';$('card-active-orders').style.display='none';$('stat-bar').style.display='none';$('bottom-nav').style.display='none';$('more-menu').classList.remove('show');
   }else{
     $('card-no-shop').style.display='none';$('card-active-orders').style.display='block';$('stat-bar').style.display='';$('bottom-nav').style.display='';
     // 默认显示今天日期
@@ -808,16 +811,20 @@ async function renderOrders(){
   if(!r||!r.ok){ console.warn('[renderOrders] API失败', r); return; }
   const orders=r.orders||[];
   const active=orders.filter(o=>o.status==='active'),done=orders.filter(o=>o.status!=='active');
+  activeOrdersSnapshot=active; // 保存快照供 showExtend 判断是否不限时
   $('active-count').textContent=active.length;
   const countEl = $('active-count');
   if(countEl) countEl.title = active.length ? '尾号: '+active.map(o=>o.code).join(', ') : '';
   const now=Date.now();
+  const TWELVE_HOURS=12*60*60*1000;
   active.sort((a,b)=>{
-    const rA=a.minutes>0?Math.max(0,a.startTime+a.minutes*60000-now):999999999;
-    const rB=b.minutes>0?Math.max(0,b.startTime+b.minutes*60000-now):999999999;
+    const rA=a.minutes>0?Math.max(0,a.startTime+a.minutes*60000-now):Math.max(0,a.startTime+TWELVE_HOURS-now);
+    const rB=b.minutes>0?Math.max(0,b.startTime+b.minutes*60000-now):Math.max(0,b.startTime+TWELVE_HOURS-now);
     return rA-rB;
   });
-  const hasExpired=active.some(o=>o.minutes>0&&now>=o.startTime+o.minutes*60000);
+  const hasExpired=active.some(o=>
+    (o.minutes>0&&now>=o.startTime+o.minutes*60000)||(o.minutes===0&&now>=o.startTime+TWELVE_HOURS)
+  );
   if(hasExpired) playBeep();
   $('active-orders').innerHTML=active.length?active.map(o=>renderOrderItem(o,true)).join(''):'<div class="empty-text">暂无进行中的订单</div>';
 
@@ -842,21 +849,23 @@ async function renderOrders(){
 }
 function renderOrderItem(o,isActive){
   if(isActive){
-    const endAt=o.minutes>0?o.startTime+o.minutes*60000:null;
-    const remain=endAt?Math.max(0,Math.ceil((endAt-Date.now())/1000)):null;
-    const rs=remain===null?'不限时♾️':remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0');
-    const expired=endAt&&Date.now()>=endAt;
+    const TWELVE_HOURS=12*60*60*1000;
+    const endAt=o.minutes>0?o.startTime+o.minutes*60000:o.startTime+TWELVE_HOURS;
+    const remain=Math.max(0,Math.ceil((endAt-Date.now())/1000));
+    const rs=remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0');
+    const expired=Date.now()>=endAt;
+    const isUnlimited=o.minutes===0;
     return `<div class="order-item" onclick="toggleOrderExpand(event,'${o.code}')">
       <input type="checkbox" class="order-check" id="chk-${o.code}" onclick="event.stopPropagation();onCheck()">
       <div class="order-left">
         <div class="order-code">${o.code}${o.tableName?` <span style="background:#fce4ec;color:#c62828;padding:1px 6px;border-radius:6px;font-size:.75em;margin-left:4px">🪑${o.tableName}</span>`:''}</div>
-        <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div></div>
-      <span class="order-status-inline ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
+        <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${isUnlimited?'不限时♾️':o.minutes+'分钟'}</div></div>
+      <span class="order-status-inline ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':(isUnlimited?'♾️'+rs:rs)}</span>
       <div class="order-actions">
         <button class="btn btn-sm" onclick="event.stopPropagation();editOrder('${o.id}','${o.code}','${o.type}','${o.price}','${o.minutes}')" title="编辑">✏️</button>
         <button class="btn btn-sm" onclick="event.stopPropagation();deleteOrder('${o.id}','${o.code}')" title="删除">🗑️</button>
         <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();completeOrder('${o.code}')">完成</button>
-        ${o.minutes>0?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();showExtend('${o.code}')">续时</button>`:''}
+        ${isUnlimited?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();showExtend('${o.code}')">续时</button>`:o.minutes>0?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();showExtend('${o.code}')">续时</button>`:''}
       </div></div>`;
   }else{
     const ts=o.endTime||o.startTime;
@@ -868,7 +877,7 @@ function renderOrderItem(o,isActive){
     const label=isToday?timeStr+' 完成':dateStr+' '+timeStr+' 完成';
     return `<div class="order-item"><div class="order-left">
       <div class="order-code">${o.code}${o.tableName?` <span style="background:#f5f5f5;color:#999;padding:1px 6px;border-radius:6px;font-size:.75em;margin-left:4px">🪑${o.tableName}</span>`:''}</div>
-      <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':'不限时'}</div>
+      <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${o.minutes>0?o.minutes+'分钟':(o.minutes===0?'不限时♾️':'--')}</div>
       <div class="order-time">${label}</div></div>
       <span class="order-status status-done">✅完成</span>
       <button class="btn btn-sm" onclick="event.stopPropagation();deleteOrder('${o.id}','${o.code}')" title="删除" style="margin-left:8px">🗑️</button>
@@ -1113,8 +1122,8 @@ async function showRenewLogs(){
 }
 function onSearch(){renderOrders()}
 function onNavFilter(status){$('filter-status').value=status;renderOrders();document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));event.target.closest('.nav-btn').classList.add('active')}
-let extendCode='';
-function showExtend(code){extendCode=code;$('extend-info').textContent='手机尾号: '+code;openDlg('dlg-extend')}
+let extendCode='',activeOrdersSnapshot=[];
+function showExtend(code){extendCode=code;const o=activeOrdersSnapshot.find(o2=>o2.code===code);const isUnlimited=o&&o.minutes===0;$('extend-info').innerHTML='手机尾号: '+code+(isUnlimited?'<br><span style="color:#e67e22;font-size:.8em">⚠️ 不限时订单，续时后将转为限时（填0保持不限时，重置12h倒计时）</span>':'');openDlg('dlg-extend')}
 async function doExtend(){
   const m=parseInt($('extend-minutes').value)||30,p=parseFloat($('extend-price').value)||0;
   if(!confirm(`续时 ${m} 分钟，¥${p}？`)) return;
@@ -1127,7 +1136,6 @@ function showQRCode(){
   const url=location.origin+location.pathname+'?shopId='+currentShopId;
   const qrImg=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=212-128-128&data=${encodeURIComponent(url)}`;
   $('qr-content').innerHTML=`<img src="${qrImg}" alt="二维码" onerror="this.onerror=null;this.nextSibling.style.display='block';this.style.display='none'"><div style="display:none;font-family:monospace;font-size:.7em;color:#999;word-break:break-all;margin-top:8px">${url}</div><p style="margin-top:8px;color:#d48080;font-weight:600">📱 顾客扫码输入手机后4位查看计时</p>`;
-  toggleMoreMenu();
 }
 async function exportCSV(){
   const r=await api('GET','/orders?shopId='+currentShopId);
@@ -1173,8 +1181,9 @@ async function customerLookup(){
   $('timer-info').textContent=(customerOrder.type==='double'?'双人':'单人')+' · ¥'+customerOrder.price+' · '+(customerOrder.minutes>0?customerOrder.minutes+'分钟':'不限时');
   if(customerTimer)clearInterval(customerTimer);
   if(customerOrder.minutes===0){
-    $('timer-display').innerHTML='<div class="timer-number" style="font-size:3em">♾️</div><div class="timer-label">不限时畅玩</div>';
-    customerTimer=setInterval(checkCustomerStatus,5000);
+    // 不限时订单：显示12小时超时倒计时
+    updateUnlimitedTimer();
+    customerTimer=setInterval(updateUnlimitedTimer,1000);
   }else{
     updateCustomerTimer();customerTimer=setInterval(updateCustomerTimer,1000);
   }
@@ -1189,6 +1198,19 @@ function updateCustomerTimer(){
     $('timer-display').innerHTML=`<div class="timer-number${w}">${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div><div class="timer-label">剩余时间</div>`;
   }
   if(Math.floor(Date.now()/1000)%5===0) checkCustomerStatus();
+}
+function updateUnlimitedTimer(){
+  if(!customerOrder||customerOrder.minutes!==0)return;
+  const TWELVE_HOURS=12*60*60*1000;
+  const end=customerOrder.startTime+TWELVE_HOURS;
+  const remain=Math.max(0,Math.ceil((end-Date.now())/1000));
+  if(remain<=0){
+    $('timer-display').innerHTML='<div class="timer-number warning">00:00</div><div class="timer-label">⏰ 时间到！</div><div class="expired-tip">不限时订单已超12小时，系统将自动结账</div>';
+  }else{
+    const m=Math.floor(remain/60),s=remain%60,w=remain<=3600?' warning':'';
+    $('timer-display').innerHTML=`<div class="timer-number${w}">${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div><div class="timer-label">不限时 · 超时前剩余（12小时自动结账）</div>`;
+  }
+  if(Math.floor(Date.now()/1000)%30===0) checkCustomerStatus();
 }
 async function checkCustomerStatus(){
   const r=await api('GET','/orders/lookup?shopId='+currentShopId+'&code='+(customerOrder?customerOrder.code:''));
@@ -1243,6 +1265,34 @@ function stopTimers(){
 startAutoRefresh();startTick();
 
 // ====== 启动 ======
+// 调试：监控 more-menu 的 class 变化
+(function(){
+  const el = document.getElementById('more-menu');
+  if (!el) return;
+  let count = 0;
+  const check = () => {
+    if (el.classList.contains('show')) {
+      count++;
+      console.trace('[DEBUG] more-menu.show detected! count='+count, new Date().toISOString());
+      el.classList.remove('show'); // 自动关闭
+    }
+  };
+  // MutationObserver
+  const mo = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && m.attributeName === 'class') {
+        if (el.classList.contains('show')) {
+          count++;
+          console.trace('[DEBUG MutationObserver] more-menu got show class! count='+count, new Date().toISOString());
+          el.classList.remove('show');
+        }
+      }
+    }
+  });
+  mo.observe(el, { attributes: true, attributeFilter: ['class'] });
+  // 定时检查
+  setInterval(check, 100);
+})();
 route();
 </script>
 </body>
