@@ -1224,12 +1224,13 @@ let refreshTimer=null,tickTimer=null;
 
 function startAutoRefresh(){
   if(refreshTimer) return;
-  refreshTimer = setInterval(async()=>{if(refreshBusy||!currentShopId||!$('page-merchant').classList.contains('active'))return;refreshBusy=true;await renderOrders();showStats();refreshBusy=false},5000);
+  refreshTimer = setInterval(async()=>{if(refreshBusy||!currentShopId||!$('page-merchant').classList.contains('active'))return;if(currentShopStatus==='paused') return;refreshBusy=true;await renderOrders();showStats();refreshBusy=false},5000);
 }
 function startTick(){
   if(tickTimer) return;
   tickTimer = setInterval(()=>{
     if(!currentShopId||!$('page-merchant').classList.contains('active'))return;
+    if(currentShopStatus==='paused') return; // 暂停营业时冻结倒计时
     document.querySelectorAll('#active-orders .order-item').forEach(el=>{
       const statusEl=el.querySelector('.order-status-inline');
       if(!statusEl)return;
