@@ -853,14 +853,14 @@ function renderOrderItem(o,isActive){
     const endAt=o.minutes>0?o.startTime+o.minutes*60000:o.startTime+TWELVE_HOURS;
     const remain=Math.max(0,Math.ceil((endAt-Date.now())/1000));
     const isUnlimited=o.minutes===0;
-    const rs=isUnlimited?'不限时♾️':(remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0'));
+    const rs=isUnlimited?'♾️':(remain<=0?'已到期':Math.floor(remain/60)+':'+String(remain%60).padStart(2,'0'));
     const expired=Date.now()>=endAt;
     return `<div class="order-item" onclick="toggleOrderExpand(event,'${o.code}')">
       <input type="checkbox" class="order-check" id="chk-${o.code}" onclick="event.stopPropagation();onCheck()">
       <div class="order-left">
         <div class="order-code">${o.code}${o.tableName?` <span style="background:#fce4ec;color:#c62828;padding:1px 6px;border-radius:6px;font-size:.75em;margin-left:4px">🪑${o.tableName}</span>`:''}</div>
-        <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${isUnlimited?'不限时♾️':o.minutes+'分钟'}</div></div>
-      <span class="order-status-inline ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':(isUnlimited?'♾️'+rs:rs)}</span>
+        <div class="order-name">${o.type==='double'?'👥双人':'👤单人'} · ¥${o.price} · ${isUnlimited?'不限时':o.minutes+'分钟'}</div></div>
+      <span class="order-status-inline ${expired?'status-expired':'status-active'}">${expired?'⚠️到期':rs}</span>
       <div class="order-actions">
         <button class="btn btn-sm" onclick="event.stopPropagation();editOrder('${o.id}','${o.code}','${o.type}','${o.price}','${o.minutes}')" title="编辑">✏️</button>
         <button class="btn btn-sm" onclick="event.stopPropagation();deleteOrder('${o.id}','${o.code}')" title="删除">🗑️</button>
