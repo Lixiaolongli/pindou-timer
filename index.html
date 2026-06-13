@@ -1265,34 +1265,6 @@ function stopTimers(){
 startAutoRefresh();startTick();
 
 // ====== 启动 ======
-// 调试：监控 more-menu 的 class 变化
-(function(){
-  const el = document.getElementById('more-menu');
-  if (!el) return;
-  let count = 0;
-  const check = () => {
-    if (el.classList.contains('show')) {
-      count++;
-      console.trace('[DEBUG] more-menu.show detected! count='+count, new Date().toISOString());
-      el.classList.remove('show'); // 自动关闭
-    }
-  };
-  // MutationObserver
-  const mo = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      if (m.type === 'attributes' && m.attributeName === 'class') {
-        if (el.classList.contains('show')) {
-          count++;
-          console.trace('[DEBUG MutationObserver] more-menu got show class! count='+count, new Date().toISOString());
-          el.classList.remove('show');
-        }
-      }
-    }
-  });
-  mo.observe(el, { attributes: true, attributeFilter: ['class'] });
-  // 定时检查
-  setInterval(check, 100);
-})();
 route();
 </script>
 </body>
